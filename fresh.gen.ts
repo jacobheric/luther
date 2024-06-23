@@ -4,30 +4,26 @@
 
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
-import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_spotify_token from "./routes/api/spotify-token.ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
+import * as $spotify_login from "./routes/spotify/login.tsx";
 import * as $tracks from "./routes/tracks.tsx";
-import * as $yt from "./routes/yt.tsx";
 import * as $Counter from "./islands/Counter.tsx";
-import * as $spotify_authCheck from "./islands/spotify/authCheck.tsx";
 import { type Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
-    "./routes/api/joke.ts": $api_joke,
     "./routes/api/spotify-token.ts": $api_spotify_token,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
+    "./routes/spotify/login.tsx": $spotify_login,
     "./routes/tracks.tsx": $tracks,
-    "./routes/yt.tsx": $yt,
   },
   islands: {
     "./islands/Counter.tsx": $Counter,
-    "./islands/spotify/authCheck.tsx": $spotify_authCheck,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;
