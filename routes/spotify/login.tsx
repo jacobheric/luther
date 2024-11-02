@@ -2,17 +2,21 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import { SPOTIFY_CLIENT_ID } from "../../lib/config.ts";
 
 export type SpotifyKey = {
+  origin: string;
   spotifyClientId?: string;
 };
 
 export const handler: Handlers = {
   GET(_req, ctx) {
-    return ctx.render({ spotifyClientId: SPOTIFY_CLIENT_ID });
+    return ctx.render({
+      spotifyClientId: SPOTIFY_CLIENT_ID,
+      origin: ctx.url.origin,
+    });
   },
 };
 
 export default function SpotifyLogin(
-  { data: { spotifyClientId } }: PageProps<
+  { data: { spotifyClientId, origin } }: PageProps<
     SpotifyKey
   >,
 ) {
@@ -25,7 +29,7 @@ export default function SpotifyLogin(
         <input
           type="hidden"
           name="redirect_uri"
-          value="http://localhost:8000/api/spotify-token"
+          value={`${origin}/api/spotify/access-token`}
         />
         <button
           className="border border-gray-200 p-3 rounded-m"

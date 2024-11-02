@@ -1,7 +1,8 @@
 import { Handlers, PageProps } from "$fresh/src/server/types.ts";
-import { getCookies } from "$std/http/cookie.ts";
+import { getCookies } from "@std/http/cookie";
 import { SavedTrack, SpotifyApi } from "npm:@spotify/web-api-ts-sdk";
 import { SPOTIFY_CLIENT_ID } from "../lib/config.ts";
+import { spotifyToken } from "@/lib/spotify.ts";
 
 export type TracksRoute = {
   items?: SavedTrack[];
@@ -16,24 +17,33 @@ export const handler: Handlers<TracksRoute> = {
       throw new Error("spotify key not found!");
     }
 
-    const token = JSON.parse(
-      decodeURIComponent(getCookies(req.headers).spotifyToken),
-    );
+    const rawToken = getCookies(req.headers).spotifyToken;
 
-    if (!token) {
+    if (!rawToken) {
       return new Response("", {
         status: 307,
         headers: { Location: "/spotify/login" },
       });
     }
 
-    const spotifySDK = SpotifyApi.withAccessToken(
-      SPOTIFY_CLIENT_ID,
-      token,
-    );
+    let tracks;
 
-    const data = await spotifySDK.currentUser.tracks.savedTracks();
-    return ctx.render(data);
+    const token = await spotifyToken(ctx.url.origin, rawToken);
+
+    try {
+      const spotifySDK = SpotifyApi.withAccessToken(
+        SPOTIFY_CLIENT_ID,
+        token,
+      );
+
+      await spotifySDK.authenticate();
+
+      tracks = await spotifySDK.currentUser.tracks.savedTracks();
+    } catch (e) {
+      console.log("spotify connect error", e);
+    }
+
+    return ctx.render(tracks);
   },
 };
 

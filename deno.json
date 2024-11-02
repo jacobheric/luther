@@ -7,6 +7,7 @@
     "start": "deno run -A --watch=static/,routes/ dev.ts",
     "build": "deno run -A dev.ts build",
     "preview": "deno run -A main.ts",
+    "openai": "deno run -A ./lib/openai.ts",
     "update": "deno run -A -r https://fresh.deno.dev/update ."
   },
   "lint": {
@@ -22,18 +23,21 @@
   ],
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.6.8/",
-    "preact": "https://esm.sh/preact@10.19.6",
-    "preact/": "https://esm.sh/preact@10.19.6/",
-    "@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
-    "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
+    "@/": "./",
+    "@preact/signals": "npm:@preact/signals@^1.3.0",
+    "@std/dotenv": "jsr:@std/dotenv",
+    "@std/encoding": "jsr:@std/encoding",
+    "@std/http": "jsr:@std/http",
+    "openai": "npm:openai",
+    "preact": "npm:preact@^10.24.1",
+    "preact-render-to-string": "npm:preact-render-to-string@^6.5.11",
     "tailwindcss": "npm:tailwindcss@3.4.1",
     "tailwindcss/": "npm:/tailwindcss@3.4.1/",
-    "tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js",
-    "$std/": "https://deno.land/std@0.216.0/"
+    "tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js"
   },
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
   },
-  "nodeModulesDir": true
+  "nodeModulesDir": "auto"
 }

@@ -1,7 +1,12 @@
 import { Handlers } from "$fresh/server.ts";
-import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from "../../lib/config.ts";
-import { setCookie } from "$std/http/cookie.ts";
-import { encodeBase64 } from "jsr:@std/encoding/base64";
+import {
+  SPOTIFY_AUTH,
+  SPOTIFY_CLIENT_ID,
+  SPOTIFY_CLIENT_SECRET,
+  SPOTIFY_TOKEN_URL,
+} from "@/lib/config.ts";
+import { setCookie } from "@std/http/cookie";
+import { setTokenCookie } from "@/lib/spotify.ts";
 
 export const handler: Handlers = {
   async GET(_, ctx) {
@@ -18,35 +23,38 @@ export const handler: Handlers = {
     const body = new URLSearchParams();
     body.append("code", code);
     body.append("grant_type", "authorization_code");
-    body.append("redirect_uri", "http://localhost:8000/api/spotify-token");
-    const auth = encodeBase64(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`);
+    body.append(
+      "redirect_uri",
+      `${ctx.url.origin}/api/spotify/access-token`,
+    );
 
-    const apiResponse = await fetch("https://accounts.spotify.com/api/token", {
+    const apiResponse = await fetch(SPOTIFY_TOKEN_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${auth}`,
+        "Authorization": `Basic ${SPOTIFY_AUTH}`,
       },
       body,
     });
 
     const token = await apiResponse.json();
 
-    if (!token) {
-      throw new Error("could not get spotify token");
+    if (!token || !token.access_token) {
+      throw new Error("Failed to get get spotify token");
     }
+
+    const tokenData = {
+      access_token: token.access_token,
+      refresh_token: token.refresh_token,
+      expires_at: Date.now() + (token.expires_in * 1000),
+    };
 
     const response = new Response("", {
       status: 307,
       headers: { Location: "/tracks" },
     });
 
-    setCookie(response.headers, {
-      name: "spotifyToken",
-      path: "/",
-      value: encodeURIComponent(JSON.stringify(token)),
-      maxAge: 400 * 24 * 60 * 60,
-    });
+    setTokenCookie(response.headers, tokenData);
     return response;
   },
 };

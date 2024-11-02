@@ -4,7 +4,8 @@
 
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
-import * as $api_spotify_token from "./routes/api/spotify-token.ts";
+import * as $api_spotify_access_token from "./routes/api/spotify/access-token.ts";
+import * as $api_spotify_refresh_token from "./routes/api/spotify/refresh-token.ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $spotify_login from "./routes/spotify/login.tsx";
@@ -16,7 +17,8 @@ const manifest = {
   routes: {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
-    "./routes/api/spotify-token.ts": $api_spotify_token,
+    "./routes/api/spotify/access-token.ts": $api_spotify_access_token,
+    "./routes/api/spotify/refresh-token.ts": $api_spotify_refresh_token,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/spotify/login.tsx": $spotify_login,
