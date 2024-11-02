@@ -1,10 +1,9 @@
-import { Handlers } from "$fresh/server.ts";
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
-import { setCookie } from "@std/http/cookie";
 import { setTokenCookie } from "@/lib/spotify.ts";
+import { define } from "@/lib/state.ts";
 
-export const handler: Handlers = {
-  async POST(req) {
+export const handler = define.handlers({
+  async POST({ req }) {
     const { refresh_token } = await req.json();
 
     if (!refresh_token) {
@@ -43,4 +42,4 @@ export const handler: Handlers = {
     setTokenCookie(apiResponse.headers, tokenData);
     return apiResponse;
   },
-};
+});

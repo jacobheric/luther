@@ -1,19 +1,20 @@
-import { Handlers, PageProps } from "$fresh/server.ts";
-import { SPOTIFY_CLIENT_ID } from "../../lib/config.ts";
+import { define } from "@/lib/state.ts";
+import { page, PageProps } from "fresh";
+import { SPOTIFY_CLIENT_ID } from "@/lib/config.ts";
 
 export type SpotifyKey = {
   origin: string;
   spotifyClientId?: string;
 };
 
-export const handler: Handlers = {
-  GET(_req, ctx) {
-    return ctx.render({
+export const handler = define.handlers({
+  POST(ctx) {
+    return page({
       spotifyClientId: SPOTIFY_CLIENT_ID,
       origin: ctx.url.origin,
     });
   },
-};
+});
 
 export default function SpotifyLogin(
   { data: { spotifyClientId, origin } }: PageProps<

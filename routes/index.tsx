@@ -1,13 +1,13 @@
-import { Handlers } from "$fresh/src/server/types.ts";
+import { define } from "@/lib/state.ts";
 
-export const handler: Handlers = {
-  GET(_req) {
+export const handler = define.handlers({
+  GET() {
     return new Response("", {
       status: 307,
       headers: { Location: "/tracks" },
     });
   },
-};
+});
 
 const Index = () => {
   return null; //nothing here yet

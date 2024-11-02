@@ -1,8 +1,9 @@
-import { Handlers, PageProps } from "$fresh/src/server/types.ts";
 import { getCookies } from "@std/http/cookie";
 import { SavedTrack, SpotifyApi } from "npm:@spotify/web-api-ts-sdk";
 import { SPOTIFY_CLIENT_ID } from "../lib/config.ts";
 import { spotifyToken } from "@/lib/spotify.ts";
+import { page, PageProps } from "fresh";
+import { define } from "@/lib/state.ts";
 
 export type TracksRoute = {
   items?: SavedTrack[];
@@ -11,13 +12,14 @@ export type TracksRoute = {
   total: number;
 };
 
-export const handler: Handlers<TracksRoute> = {
-  async GET(req, ctx) {
+export const handler = define.handlers({
+  async GET(ctx) {
+    console.log("shit client id", SPOTIFY_CLIENT_ID);
     if (!SPOTIFY_CLIENT_ID) {
       throw new Error("spotify key not found!");
     }
 
-    const rawToken = getCookies(req.headers).spotifyToken;
+    const rawToken = getCookies(ctx.req.headers).spotifyToken;
 
     if (!rawToken) {
       return new Response("", {
@@ -43,9 +45,9 @@ export const handler: Handlers<TracksRoute> = {
       console.log("spotify connect error", e);
     }
 
-    return ctx.render(tracks);
+    return page(tracks);
   },
-};
+});
 
 const Tracks = (
   { data: { items, limit, offset, total } }: PageProps<

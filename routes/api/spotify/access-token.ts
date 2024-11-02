@@ -1,15 +1,14 @@
-import { Handlers } from "$fresh/server.ts";
 import {
   SPOTIFY_AUTH,
   SPOTIFY_CLIENT_ID,
   SPOTIFY_CLIENT_SECRET,
   SPOTIFY_TOKEN_URL,
 } from "@/lib/config.ts";
-import { setCookie } from "@std/http/cookie";
 import { setTokenCookie } from "@/lib/spotify.ts";
+import { define } from "@/lib/state.ts";
 
-export const handler: Handlers = {
-  async GET(_, ctx) {
+export const handler = define.handlers({
+  async POST(ctx) {
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
       throw new Error("Spotify client id or secret missing");
     }
@@ -57,4 +56,4 @@ export const handler: Handlers = {
     setTokenCookie(response.headers, tokenData);
     return response;
   },
-};
+});

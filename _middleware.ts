@@ -1,4 +1,4 @@
-import { FreshContext } from "$fresh/server.ts";
+import { FreshContext } from "fresh/server.ts";
 import { getCookies } from "$std/http/cookie.ts";
 
 const spotifyExcludes = [
