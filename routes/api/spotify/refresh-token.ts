@@ -1,6 +1,7 @@
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
-import { setTokenCookie } from "@/lib/spotify.ts";
+
 import { define } from "@/lib/state.ts";
+import { setTokenCookie } from "@/lib/cookie.ts";
 
 export const handler = define.handlers({
   async POST({ req }) {

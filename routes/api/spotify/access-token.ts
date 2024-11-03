@@ -4,11 +4,12 @@ import {
   SPOTIFY_CLIENT_SECRET,
   SPOTIFY_TOKEN_URL,
 } from "@/lib/config.ts";
-import { setTokenCookie } from "@/lib/spotify.ts";
+
 import { define } from "@/lib/state.ts";
+import { setTokenCookie } from "@/lib/cookie.ts";
 
 export const handler = define.handlers({
-  async POST(ctx) {
+  async GET(ctx) {
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
       throw new Error("Spotify client id or secret missing");
     }
@@ -50,7 +51,7 @@ export const handler = define.handlers({
 
     const response = new Response("", {
       status: 307,
-      headers: { Location: "/tracks" },
+      headers: { Location: "/" },
     });
 
     setTokenCookie(response.headers, tokenData);

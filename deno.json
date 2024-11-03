@@ -32,7 +32,8 @@
     "preact-render-to-string": "npm:preact-render-to-string@^6.5.11",
     "tailwindcss": "npm:tailwindcss@3.4.1",
     "tailwindcss/": "npm:/tailwindcss@3.4.1/",
-    "tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js"
+    "tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js",
+    "tabler-icons/": "https://deno.land/x/tabler_icons_tsx@0.0.5/"
   },
   "compilerOptions": {
     "jsx": "react-jsx",

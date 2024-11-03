@@ -8,6 +8,12 @@ export type SpotifyKey = {
 };
 
 export const handler = define.handlers({
+  GET(ctx) {
+    return page({
+      spotifyClientId: SPOTIFY_CLIENT_ID,
+      origin: ctx.url.origin,
+    });
+  },
   POST(ctx) {
     return page({
       spotifyClientId: SPOTIFY_CLIENT_ID,
@@ -23,10 +29,14 @@ export default function SpotifyLogin(
 ) {
   return (
     <div className="m-8">
-      <form action="https://accounts.spotify.com/authorize" method="get">
+      <form action="https://accounts.spotify.com/authorize" method="GET">
         <input type="hidden" name="response_type" value="code" />
         <input type="hidden" name="client_id" value={spotifyClientId} />
-        <input type="hidden" name="scope" value="user-library-read" />
+        <input
+          type="hidden"
+          name="scope"
+          value="user-library-read,user-read-playback-state,user-modify-playback-state"
+        />
         <input
           type="hidden"
           name="redirect_uri"

@@ -14,7 +14,6 @@ export type TracksRoute = {
 
 export const handler = define.handlers({
   async GET(ctx) {
-    console.log("shit client id", SPOTIFY_CLIENT_ID);
     if (!SPOTIFY_CLIENT_ID) {
       throw new Error("spotify key not found!");
     }
@@ -42,7 +41,7 @@ export const handler = define.handlers({
 
       tracks = await spotifySDK.currentUser.tracks.savedTracks();
     } catch (e) {
-      console.log("spotify connect error", e);
+      console.error("spotify connect error", e);
     }
 
     return page(tracks);
