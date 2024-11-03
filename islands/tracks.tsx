@@ -1,8 +1,12 @@
 import { useEffect, useState } from "preact/hooks";
+import Loader2 from "tabler-icons/tsx/loader-2.tsx";
 
 export const Tracks = ({ tracks }: { tracks?: any[] }) => {
   const [selected, setSelected] = useState<any[]>(tracks || []);
   const [devices, setDevices] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [submitType, setSubmitType] = useState("play");
 
   const getDevices = async () => {
     const response = await fetch(`http://localhost:8000/api/spotify/devices`);
@@ -14,22 +18,31 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
   }, []);
 
   const submit = async (e: any) => {
+    setSubmitting(true);
     e.preventDefault();
 
     // Extract form data
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
-    const response = await fetch("http://localhost:8000/api/spotify/play", {
-      method: "POST",
-      body: formData,
-    });
+    const response = submitType === "queue"
+      ? await fetch("http://localhost:8000/api/spotify/queue", {
+        method: "POST",
+        body: formData,
+      })
+      : await fetch("http://localhost:8000/api/spotify/play", {
+        method: "POST",
+        body: formData,
+      });
 
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
     }
 
     await response.text();
+    setSubmitting(false);
+    setMessage("Done!");
+    setTimeout(() => setMessage(""), 3000);
   };
 
   return (
@@ -66,12 +79,30 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
               )}
 
             {devices?.length > 0 && selected.length > 0 && (
-              <button
-                className="border border-gray-200 bg-gray-100 p-3 rounded-m"
-                type="submit"
-              >
-                Play
-              </button>
+              <div className="flex flex-row justify-end items-center gap-2">
+                {submitting && <Loader2 className="animate-spin" />}
+                {message ? message : null}
+                <button
+                  className={`border border-gray-200 bg-gray-100 p-3 rounded-m ${
+                    submitting ? "cursor-not-allowed" : ""
+                  }`}
+                  type="submit"
+                  disabled={submitting}
+                  onClick={() => setSubmitType("queue")}
+                >
+                  Queue
+                </button>
+                <button
+                  className={`border border-gray-200 bg-gray-100 p-3 rounded-m ${
+                    submitting ? "cursor-not-allowed" : ""
+                  }`}
+                  type="submit"
+                  disabled={submitting}
+                  onClick={() => setSubmitType("play")}
+                >
+                  Play
+                </button>
+              </div>
             )}
           </div>
         }

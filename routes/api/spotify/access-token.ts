@@ -6,7 +6,7 @@ import {
 } from "@/lib/config.ts";
 
 import { define } from "@/lib/state.ts";
-import { setTokenCookie } from "@/lib/cookie.ts";
+import { setTokenCookie } from "../../../lib/token.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {

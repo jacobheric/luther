@@ -1,12 +1,11 @@
-import { define } from "@/lib/state.ts";
-import { page, PageProps } from "fresh";
-import { getSongs } from "@/lib/openai.ts";
-import { searchSongs, spotifyToken } from "@/lib/spotify.ts";
-import { getCookies } from "@std/http/cookie";
+import { Go } from "@/islands/go.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
 import { SPOTIFY_CLIENT_ID } from "@/lib/config.ts";
-import IconPencil from "tabler-icons/tsx/pencil.tsx";
-import { Go } from "@/islands/go.tsx";
+import { getSongs } from "@/lib/openai.ts";
+import { searchSongs } from "@/lib/spotify.ts";
+import { define } from "@/lib/state.ts";
+import { getSpotifyToken } from "@/lib/token.ts";
+import { page, PageProps } from "fresh";
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -23,20 +22,19 @@ export const handler = define.handlers({
       return page({ prompt, songs: [] });
     }
 
-    const rawToken = getCookies(ctx.req.headers).spotifyToken;
-    const token = await spotifyToken(ctx.url.origin, rawToken);
+    const token = await getSpotifyToken(ctx);
     const songs = await searchSongs(token, rawSongs);
 
     return page({ prompt, songs });
   },
-  GET(ctx) {
+  async GET(ctx) {
     if (!SPOTIFY_CLIENT_ID) {
       throw new Error("spotify key not found!");
     }
 
-    const rawToken = getCookies(ctx.req.headers).spotifyToken;
+    const token = await getSpotifyToken(ctx);
 
-    if (!rawToken) {
+    if (!token) {
       return new Response("", {
         status: 307,
         headers: { Location: "/spotify/login" },

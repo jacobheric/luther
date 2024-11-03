@@ -1,35 +1,4 @@
-export type TokenData = {
-  access_token: string;
-  refresh_token: string;
-  expires_at: number;
-};
-
-export const spotifyToken = async (origin: string, rawToken: string) => {
-  const token = JSON.parse(
-    decodeURIComponent(rawToken),
-  );
-
-  if (!token.expires_at || Date.now() >= token.expires_at) {
-    const response = await fetch(
-      `${origin}/api/spotify/refresh-token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh_token: token.refresh_token }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to refresh token");
-    }
-
-    return await response.json();
-  }
-
-  return token;
-};
+import { TokenData } from "@/lib/token.ts";
 
 export const searchSong = async (
   token: TokenData,
@@ -63,6 +32,25 @@ export const getDevices = async (token: TokenData) => {
 
   const { devices } = await response.json();
   return devices;
+};
+
+export const queue = async (
+  token: TokenData,
+  deviceId: string,
+  uris: string[],
+) => {
+  for await (const uri of uris) {
+    await fetch(
+      `https://api.spotify.com/v1/me/player/queue?device_id=${deviceId}&uri=${uri}`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token.access_token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
 };
 
 export const play = async (

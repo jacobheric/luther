@@ -1,12 +1,11 @@
 import { define } from "@/lib/state.ts";
 
-import { getDevices, spotifyToken } from "@/lib/spotify.ts";
-import { getCookies } from "@std/http/cookie";
+import { getSpotifyToken } from "@/lib/token.ts";
+import { getDevices } from "@/lib/spotify.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {
-    const rawToken = getCookies(ctx.req.headers).spotifyToken;
-    const token = await spotifyToken(ctx.url.origin, rawToken);
+    const token = await getSpotifyToken(ctx);
     const devices = await getDevices(token);
 
     return new Response(JSON.stringify(devices));

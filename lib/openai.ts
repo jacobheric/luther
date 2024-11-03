@@ -4,26 +4,20 @@ import { OPENAI_API_KEY } from "@/lib/config.ts";
 
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-const completion = await openai.chat.completions.create({
-  model: "gpt-4o-mini",
-  messages: [
-    { role: "system", content: "You are a helpful assistant." },
-    {
-      role: "user",
-      content: "Write a haiku about recursion in programming.",
-    },
-  ],
-});
-
 export const getSongs = async (prompt: string) => {
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{
       role: "user",
-      content: `List some songs that fit the following description, 
-        don't provide any other information, 
+      content: `List songs that fit the following prompt. Try to provide
+        least 10 songs, unless the prompst is asking for a specific result. 
+        Don't provide any other information, 
         just a list of songs with no unnumeration in the 
-        format of "Song Name -- Album Name -- Artist Name": ${prompt}`,
+        format of "Song Name -- Album Name -- Artist Name". 
+        
+        Prompt: ### 
+        ${prompt}
+        ###`,
     }],
   });
 

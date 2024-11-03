@@ -1,6 +1,7 @@
 import { define } from "@/lib/state.ts";
 
-import { play } from "@/lib/spotify.ts";
+import { getDevices, play, queue, spotifyToken } from "@/lib/spotify.ts";
+import { getCookies } from "@std/http/cookie";
 import { getSpotifyToken } from "@/lib/token.ts";
 
 export const handler = define.handlers({
@@ -14,7 +15,7 @@ export const handler = define.handlers({
     }
 
     const token = await getSpotifyToken(ctx);
-    await play(token, device, uris.map((uri) => uri.toString()));
+    await queue(token, device, uris.map((uri) => uri.toString()));
 
     return new Response(null, { status: 200 });
   },
