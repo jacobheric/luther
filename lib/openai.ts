@@ -2,9 +2,15 @@ import "@std/dotenv/load";
 import OpenAI from "openai";
 import { OPENAI_API_KEY } from "@/lib/config.ts";
 
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
 
 export const getSongs = async (prompt: string) => {
+  if (!openai) {
+    throw new Error(
+      "OpenAI not initialized, did you provide the OPEN_API_KEY?",
+    );
+  }
+
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{
