@@ -9,7 +9,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
   const [submitType, setSubmitType] = useState("play");
 
   const getDevices = async () => {
-    const response = await fetch(`http://localhost:8000/api/spotify/devices`);
+    const response = await fetch(`/api/spotify/devices`);
     setDevices(JSON.parse(await response.text()));
   };
 
@@ -26,11 +26,11 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
     const formData = new FormData(form);
 
     const response = submitType === "queue"
-      ? await fetch("http://localhost:8000/api/spotify/queue", {
+      ? await fetch("/api/spotify/queue", {
         method: "POST",
         body: formData,
       })
-      : await fetch("http://localhost:8000/api/spotify/play", {
+      : await fetch("/api/spotify/play", {
         method: "POST",
         body: formData,
       });
@@ -118,7 +118,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
               >
                 X
               </button>
-              <div className="mr-2">
+              <div>
                 <img
                   src={song.album.images.find((i: any) => i.height === 64)?.url}
                 />

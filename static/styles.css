@@ -1,3 +1,9 @@
 @tailwind base;
+
+@layer base {
+  a {
+    @apply hover:no-underline underline underline-offset-4 decoration-1;
+  }
+}
 @tailwind components;
 @tailwind utilities;

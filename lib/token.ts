@@ -9,6 +9,9 @@ export type TokenData = {
 
 export const getSpotifyToken = async (ctx: FreshContext) => {
   const rawToken = getCookies(ctx.req.headers).spotifyToken;
+  if (!rawToken) {
+    return null;
+  }
   return await refreshSpotifyToken(ctx.url.origin, rawToken);
 };
 export const setTokenCookie = (headers: Headers, tokenData: TokenData) =>
@@ -19,7 +22,10 @@ export const setTokenCookie = (headers: Headers, tokenData: TokenData) =>
     maxAge: 400 * 24 * 60 * 60,
   });
 
-export const refreshSpotifyToken = async (origin: string, rawToken: string) => {
+export const refreshSpotifyToken = async (
+  origin: string,
+  rawToken: string,
+) => {
   const token = JSON.parse(
     decodeURIComponent(rawToken),
   );

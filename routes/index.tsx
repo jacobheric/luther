@@ -49,7 +49,7 @@ const Index = (
   { data }: PageProps<{ prompt: string; songs: any[] }>,
 ) => {
   return (
-    <div className="flex flex-col w-[80%] mx-auto">
+    <div className="flex flex-col sm:w-[90%] md:w-[80%] mx-4">
       <form method="post" id="prompt">
         <div className="mx-auto mt-12 flex flex-row justify-center items-center gap-2">
           <input
