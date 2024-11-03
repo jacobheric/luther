@@ -7,10 +7,12 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submitType, setSubmitType] = useState("play");
+  const [devicesLoaded, setDevicesLoaded] = useState(false);
 
   const getDevices = async () => {
     const response = await fetch(`/api/spotify/devices`);
     setDevices(JSON.parse(await response.text()));
+    setDevicesLoaded(true);
   };
 
   useEffect(() => {
@@ -49,23 +51,9 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
     <form onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
         {
-          <div className="my-4 flex flex-row justify-between items-center">
-            {devices?.length > 0
+          <div className="my-4 flex flex-row justify-between items-center w-full">
+            {!devicesLoaded ? null : devices?.length === 0
               ? (
-                <div>
-                  Devices:
-                  <select
-                    name="device"
-                    id="device"
-                    className="p-3 border-gray-200 rounded-m mx-3"
-                  >
-                    {devices.map(({ id, name }: any) => (
-                      <option className="px-2 mx-2" value={id}>{name}</option>
-                    ))}
-                  </select>
-                </div>
-              )
-              : (
                 <div>
                   No devices found. You must have spotify open to play. Open
                   spotify and{" "}
@@ -75,6 +63,20 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                   >
                     refresh device list
                   </a>.
+                </div>
+              )
+              : (
+                <div className="flex flex-row justify-start items-center">
+                  <span className="hidden md:inline">Devices:</span>
+                  <select
+                    name="device"
+                    id="device"
+                    className="border-gray-200 rounded-m mx-3 w-full"
+                  >
+                    {devices.map(({ id, name }: any) => (
+                      <option className="px-2 mx-2" value={id}>{name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 

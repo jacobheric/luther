@@ -16,7 +16,9 @@ export const searchSong = async (
       },
     },
   );
+
   const result = await response.json();
+
   const track = result.tracks.items[0];
   return track;
 };
@@ -31,6 +33,7 @@ export const getDevices = async (token: TokenData) => {
   });
 
   const { devices } = await response.json();
+
   return devices;
 };
 
