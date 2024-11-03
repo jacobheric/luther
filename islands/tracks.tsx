@@ -112,7 +112,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
           song && (
             <div className="flex flex-row justify-start items-center gap-4 border-b border-gray-200 w-full mb-2 pb-2">
               <button
-                className="border hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3"
+                className="border hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3 bg-gray-100"
                 onClick={(e: any) => {
                   e.preventDefault();
                   setSelected(selected.filter((_, index) => i !== index));
