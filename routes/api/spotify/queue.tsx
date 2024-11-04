@@ -1,7 +1,6 @@
 import { define } from "@/lib/state.ts";
 
-import { getDevices, play, queue, spotifyToken } from "@/lib/spotify.ts";
-import { getCookies } from "@std/http/cookie";
+import { queue } from "@/lib/spotify.ts";
 import { getSpotifyToken } from "@/lib/token.ts";
 
 export const handler = define.handlers({

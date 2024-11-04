@@ -71,7 +71,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                   <select
                     name="device"
                     id="device"
-                    className="border-gray-200 rounded-m mx-3 w-full"
+                    className="border-gray-200 rounded-m mx-3 w-full p-1"
                   >
                     {devices.map(({ id, name }: any) => (
                       <option className="px-2 mx-2" value={id}>{name}</option>

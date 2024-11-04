@@ -1,5 +1,8 @@
 import { getCookies, setCookie } from "@std/http/cookie";
 import { FreshContext } from "fresh";
+import { signal } from "@preact/signals";
+
+const refreshSignal = signal<Promise<TokenData | null> | null>(null);
 
 export type TokenData = {
   access_token: string;
@@ -22,6 +25,29 @@ export const setTokenCookie = (headers: Headers, tokenData: TokenData) =>
     maxAge: 400 * 24 * 60 * 60,
   });
 
+const fetchNewToken = async (
+  origin: string,
+  refreshToken: string,
+): Promise<TokenData | null> => {
+  const response = await fetch(
+    `${origin}/api/spotify/refresh-token`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    },
+  );
+
+  if (!response.ok) {
+    console.error("Failed to refresh token", response);
+    return null;
+  }
+
+  return await response.json();
+};
+
 export const refreshSpotifyToken = async (
   origin: string,
   rawToken: string,
@@ -31,23 +57,16 @@ export const refreshSpotifyToken = async (
   );
 
   if (!token.expires_at || Date.now() >= token.expires_at) {
-    const response = await fetch(
-      `${origin}/api/spotify/refresh-token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh_token: token.refresh_token }),
-      },
-    );
-
-    if (!response.ok) {
-      console.error("Failed to refresh token", response);
-      return null;
+    if (refreshSignal.value) {
+      return await refreshSignal.value;
     }
 
-    return await response.json();
+    try {
+      refreshSignal.value = fetchNewToken(origin, token.refresh_token);
+      return await refreshSignal.value;
+    } finally {
+      refreshSignal.value = null;
+    }
   }
 
   return token;
