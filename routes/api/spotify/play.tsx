@@ -14,6 +14,14 @@ export const handler = define.handlers({
     }
 
     const token = await getSpotifyToken(ctx);
+
+    if (!token) {
+      return new Response("", {
+        status: 307,
+        headers: { Location: "/spotify/login" },
+      });
+    }
+
     await play(token, device, uris.map((uri) => uri.toString()));
 
     return new Response(null, { status: 200 });

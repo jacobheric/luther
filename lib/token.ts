@@ -43,7 +43,8 @@ export const refreshSpotifyToken = async (
     );
 
     if (!response.ok) {
-      throw new Error("Failed to refresh token");
+      console.error("Failed to refresh token", response);
+      return null;
     }
 
     return await response.json();

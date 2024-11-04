@@ -23,6 +23,13 @@ export const handler = define.handlers({
     }
 
     const token = await getSpotifyToken(ctx);
+
+    if (!token) {
+      return new Response("", {
+        status: 307,
+        headers: { Location: "/spotify/login" },
+      });
+    }
     const songs = await searchSongs(token, rawSongs);
 
     return page({ prompt, songs });
