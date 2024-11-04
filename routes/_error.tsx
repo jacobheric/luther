@@ -1,11 +1,11 @@
 import { HttpError, type PageProps } from "fresh";
 
 export default function ErrorPage(props: PageProps) {
-  const error = props.error; // Contains the thrown Error or HTTPError
-  if (error instanceof HttpError) {
-    const status = error.status; // HTTP status code
+  const error = props.error;
 
-    // Render a 404 not found page
+  if (error instanceof HttpError) {
+    const status = error.status;
+
     if (status === 404) {
       return (
         <div class="px-4 py-8 mx-auto my-10 text-2xl">
@@ -14,6 +14,8 @@ export default function ErrorPage(props: PageProps) {
       );
     }
   }
+
+  console.error("fatal error", error);
 
   return <h1>uh oh...</h1>;
 }
