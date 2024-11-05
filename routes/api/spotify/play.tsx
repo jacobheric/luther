@@ -1,7 +1,6 @@
 import { define } from "@/lib/state.ts";
 
 import { play } from "@/lib/spotify.ts";
-import { getSpotifyToken } from "@/lib/token.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -13,16 +12,11 @@ export const handler = define.handlers({
       throw Error("missing device or track uri");
     }
 
-    const token = await getSpotifyToken(ctx);
-
-    if (!token) {
-      return new Response("", {
-        status: 307,
-        headers: { Location: "/spotify/login" },
-      });
-    }
-
-    await play(token, device, uris.map((uri) => uri.toString()));
+    await play(
+      ctx.state.spotifyToken,
+      device,
+      uris.map((uri) => uri.toString()),
+    );
 
     return new Response(null, { status: 200 });
   },

@@ -32,5 +32,3 @@ jobs:
           project: "jacobheric-luther"
           entrypoint: "main.ts"
           root: "."
-          
-          

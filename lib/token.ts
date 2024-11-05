@@ -1,8 +1,6 @@
 import { getCookies, setCookie } from "@std/http/cookie";
 import { FreshContext } from "fresh";
-import { signal } from "@preact/signals";
-
-const refreshSignal = signal<Promise<TokenData | null> | null>(null);
+import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
 
 export type TokenData = {
   access_token: string;
@@ -10,13 +8,11 @@ export type TokenData = {
   expires_at: number;
 };
 
-export const getSpotifyToken = async (ctx: FreshContext) => {
-  const rawToken = getCookies(ctx.req.headers).spotifyToken;
-  if (!rawToken) {
-    return null;
-  }
-  return await refreshSpotifyToken(ctx.url.origin, rawToken);
-};
+export const spotifyLoginRedirect = new Response("", {
+  status: 307,
+  headers: { Location: "/spotify/login" },
+});
+
 export const setTokenCookie = (headers: Headers, tokenData: TokenData) =>
   setCookie(headers, {
     name: "spotifyToken",
@@ -25,48 +21,38 @@ export const setTokenCookie = (headers: Headers, tokenData: TokenData) =>
     maxAge: 400 * 24 * 60 * 60,
   });
 
-const fetchNewToken = async (
-  origin: string,
-  refreshToken: string,
-): Promise<TokenData | null> => {
-  const response = await fetch(
-    `${origin}/api/spotify/refresh-token`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    },
-  );
-
-  if (!response.ok) {
-    console.error("Failed to refresh token", response);
-    return null;
-  }
-
-  return await response.json();
-};
+export const getSpotifyToken = (ctx: FreshContext) =>
+  getCookies(ctx.req.headers).spotifyToken;
 
 export const refreshSpotifyToken = async (
-  origin: string,
   rawToken: string,
 ) => {
   const token = JSON.parse(
     decodeURIComponent(rawToken),
   );
 
-  if (!token.expires_at || Date.now() >= token.expires_at) {
-    if (refreshSignal.value) {
-      return await refreshSignal.value;
-    }
+  if (Date.now() >= token.expires_at) {
+    const body = new URLSearchParams();
+    body.append("grant_type", "refresh_token");
+    body.append("refresh_token", token.refresh_token);
 
-    try {
-      refreshSignal.value = fetchNewToken(origin, token.refresh_token);
-      return await refreshSignal.value;
-    } finally {
-      refreshSignal.value = null;
-    }
+    const response = await fetch(SPOTIFY_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${SPOTIFY_AUTH}`,
+      },
+      body,
+    });
+
+    const refreshedToken = await response.json();
+
+    return refreshedToken
+      ? {
+        ...refreshedToken,
+        expires_at: Date.now() + (refreshedToken.expires_in * 1000),
+      }
+      : null;
   }
 
   return token;

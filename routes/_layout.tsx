@@ -6,9 +6,9 @@ export default function Layout({ Component }: PageProps) {
   return (
     <div className="flex flex-col min-h-screen justify-between">
       <div className="flex flex-col justify-start">
-        <div class="border-b py-2 px-3 flex flex-row justify-between">
+        <div class="border-b p-4 flex flex-row justify-between">
           <div>
-            <h2 class=" font-bold tracking-widest">
+            <h2 class="font-bold tracking-widest">
               <a
                 class="no-underline"
                 href="/"
@@ -27,7 +27,7 @@ export default function Layout({ Component }: PageProps) {
           </Partial>
         </div>
       </div>
-      <footer class="border-t flex flex-row items-center tracking-wide justify-center text-lg py-4 gap-1">
+      <footer class="border-t flex flex-row items-center tracking-wide justify-center p-3 gap-1">
         <div className="w-full inline text-right">
           <a
             href="https://github.com/jacobheric/luther"
@@ -38,7 +38,7 @@ export default function Layout({ Component }: PageProps) {
           with
         </div>
 
-        <div className="text-2xl">
+        <div className="text-xl">
           &#9829;
         </div>
 
