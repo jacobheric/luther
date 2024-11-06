@@ -6,7 +6,7 @@ export default function Layout({ Component }: PageProps) {
   return (
     <div className="flex flex-col min-h-screen justify-between">
       <div className="flex flex-col justify-start">
-        <div class="border-b p-4 flex flex-row justify-between">
+        <div class="border-b p-4 flex flex-row justify-between ">
           <div>
             <h2 class="font-bold tracking-widest">
               <a
@@ -21,7 +21,7 @@ export default function Layout({ Component }: PageProps) {
             <Menu />
           </div>
         </div>
-        <div class="flex justify-center">
+        <div class="flex justify-center sm:w-[90%] md:max-w-6xl md:mx-auto">
           <Partial name="overlay-content">
             <Component />
           </Partial>

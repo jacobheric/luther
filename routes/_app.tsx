@@ -14,6 +14,8 @@ function App({ Component, state }: PageProps<never, State>) {
         />
 
         <link rel="stylesheet" href="/styles.css" />
+
+        {state.script && <script src={state.script} defer />}
       </head>
       <body>
         <Component />

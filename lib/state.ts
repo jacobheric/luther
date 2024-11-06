@@ -5,7 +5,8 @@ export interface State {
   title?: string;
   description?: string;
   noIndex?: boolean;
-  spotifyToken: TokenData;
+  script?: string;
+  spotifyToken?: TokenData;
 }
 
 export const define = createDefine<State>();
