@@ -43,7 +43,7 @@ export default function Login(
         <div class="flex flex-col gap-4">
           <label for="email">Email</label>
           <input
-            className="border border-gray-200 p-3 rounded-m w-full"
+            className="border border-gray-200 p-3 rounded w-full"
             type="email"
             name="email"
             required
@@ -51,13 +51,13 @@ export default function Login(
 
           <label for="password">Password</label>
           <input
-            className="border border-gray-200 p-3 rounded-m w-full"
+            className="border border-gray-200 p-3 rounded w-full"
             type="password"
             name="password"
             required
           />
           <button
-            className={`border border-gray-200 bg-gray-100 p-3 rounded-m `}
+            className={`border border-gray-200 bg-gray-100 p-3 rounded `}
             type="submit"
           >
             Login

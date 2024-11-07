@@ -1,6 +1,6 @@
 import { type PageProps } from "fresh";
 import { Partial } from "fresh/runtime";
-import Nav from "@/components/nav.tsx";
+import { Nav } from "@/islands/nav.tsx";
 
 export default function Layout({ Component }: PageProps) {
   return (
@@ -19,7 +19,7 @@ export default function Layout({ Component }: PageProps) {
           </div>
           <Nav />
         </div>
-        <div class="flex justify-center sm:w-[90%] md:max-w-6xl md:mx-auto">
+        <div class="flex justify-center sm:w-[90%] px-4 md:max-w-6xl md:mx-auto">
           <Partial name="overlay-content">
             <Component />
           </Partial>

@@ -43,7 +43,7 @@ export default function SpotifyLogin(
           value={`${origin}/api/spotify/access-token`}
         />
         <button
-          className="border border-gray-200 p-3 rounded-m"
+          className="border border-gray-200 p-3 rounded"
           type="submit"
         >
           Authorize Luther on Spotify

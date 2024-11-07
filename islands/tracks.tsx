@@ -52,7 +52,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                 {submitting && <Loader2 className="animate-spin" />}
                 {message ? message : null}
                 <button
-                  className={`border border-gray-200 bg-gray-100 p-3 rounded-m ${
+                  className={`border border-gray-200 bg-gray-100 p-3 rounded ${
                     submitting ? "cursor-not-allowed" : ""
                   }`}
                   type="submit"
@@ -62,7 +62,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                   Queue
                 </button>
                 <button
-                  className={`border border-gray-200 bg-gray-100 p-3 rounded-m ${
+                  className={`border border-gray-200 bg-gray-100 p-3 rounded ${
                     submitting ? "cursor-not-allowed" : ""
                   }`}
                   type="submit"
