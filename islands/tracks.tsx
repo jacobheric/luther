@@ -1,4 +1,5 @@
-import { useEffect, useState } from "preact/hooks";
+import { Devices } from "@/islands/devices.tsx";
+import { useState } from "preact/hooks";
 import Loader2 from "tabler-icons/tsx/loader-2.tsx";
 
 export const Tracks = ({ tracks }: { tracks?: any[] }) => {
@@ -7,17 +8,6 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submitType, setSubmitType] = useState("play");
-  const [devicesLoaded, setDevicesLoaded] = useState(false);
-
-  const getDevices = async () => {
-    const response = await fetch(`/api/spotify/devices`);
-    setDevices(JSON.parse(await response.text()));
-    setDevicesLoaded(true);
-  };
-
-  useEffect(() => {
-    getDevices();
-  }, []);
 
   const submit = async (e: any) => {
     setSubmitting(true);
@@ -52,36 +42,11 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
         {
           <div className="my-4 flex flex-row justify-between items-center w-full">
-            {!devicesLoaded || !selected.length
-              ? null
-              : devices?.length === 0
-              ? (
-                <div>
-                  No devices found. You must have spotify open to play. Open
-                  spotify and{" "}
-                  <a
-                    className="cursor-pointer underline"
-                    onClick={() => getDevices()}
-                  >
-                    refresh device list
-                  </a>.
-                </div>
-              )
-              : (
-                <div className="flex flex-row justify-start items-center">
-                  <span className="hidden md:inline">Devices:</span>
-                  <select
-                    name="device"
-                    id="device"
-                    className="border-gray-200 rounded-m mx-3 w-full p-1"
-                  >
-                    {devices.map(({ id, name }: any) => (
-                      <option className="px-2 mx-2" value={id}>{name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
+            <Devices
+              tracks={selected.length > 0}
+              devices={devices}
+              setDevices={setDevices}
+            />
             {devices?.length > 0 && selected.length > 0 && (
               <div className="flex flex-row justify-end items-center gap-2">
                 {submitting && <Loader2 className="animate-spin" />}
@@ -112,7 +77,11 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
         }
         {selected?.map((song, i) => (
           song && (
-            <div className="flex flex-row justify-start items-center gap-4 border-b border-gray-200 w-full mb-2 pb-2">
+            <div
+              className={`flex flex-row justify-start items-center gap-4 ${
+                i !== selected.length - 1 && "border-b"
+              } border-gray-200 w-full mb-2 pb-2`}
+            >
               <button
                 className="border hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3 bg-gray-100"
                 onClick={(e: any) => {

@@ -16,7 +16,8 @@ export const getSongs = async (prompt: string) => {
     messages: [{
       role: "user",
       content: `List songs that fit the following prompt. Try to provide
-        least 10 songs, unless the prompst is asking for a specific result. 
+        least 20 songs, unless the prompst is asking for a specific result. 
+        Sort the songs that are most relevant to the prompt first.
         Don't provide any other information, 
         just a list of songs with no unnumeration in the 
         format of "Song Name -- Album Name -- Artist Name". 
