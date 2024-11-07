@@ -1,43 +1,55 @@
 import { define } from "@/lib/state.ts";
-import { AuthError } from "@supabase/supabase-js";
+
 import { page, PageProps } from "fresh";
 
+import { SUPABASE_PUBLIC_KEY, SUPABASE_URL } from "@/lib/config.ts";
+import { createClient } from "@supabase/supabase-js";
+
+import Password from "@/islands/password.tsx";
+
 export const handler = define.handlers({
-  POST() {
-    return page();
-  },
-  GET() {
-    return page();
+  async POST(ctx) {
+    const form = await ctx.req.formData();
+    const password = form.get("password")?.toString();
+    const token = form.get("token")?.toString();
+    const refreshToken = form.get("refreshToken")?.toString();
+
+    if (!refreshToken || !token || !password) {
+      return page({
+        error: "A valid invite token and password are required.",
+      });
+    }
+
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_PUBLIC_KEY!);
+
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: refreshToken,
+    });
+
+    if (sessionError) {
+      return page({
+        error: "Invite token is invalid. Maybe try another sign up.",
+      });
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    });
+
+    if (updateError) {
+      return page({
+        error:
+          `Update password failed. ${updateError.message} Please try again. `,
+      });
+    }
+
+    return page({ success: true });
   },
 });
 
-export default function Password(
-  { data }: PageProps<{ error?: AuthError }>,
-) {
-  return (
-    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 prose">
-      {data?.error && <p class="text-red-500">{data?.error?.message}</p>}
-      <form method="post">
-        <div class="flex flex-col gap-4">
-          <label for="password">Password</label>
-          <input
-            className="border border-gray-200 p-3 rounded-m w-full"
-            type="password"
-            name="password"
-            required
-          />
-          <button
-            className={`border border-gray-200 bg-gray-100 p-3 rounded-m `}
-            type="submit"
-          >
-            Set Password
-          </button>
-          <div className="flex flex-row justify-start items-center gap-2 tracking-wide underline-offset-4">
-            <a href="/login">login</a>
-            <a href="/signup">signup</a>
-          </div>
-        </div>
-      </form>
-    </div>
-  );
-}
+export const PasswordRoute = (
+  { data }: PageProps<{ error?: string; success?: boolean }>,
+) => <Password error={data?.error} success={data?.success} />;
+
+export default PasswordRoute;
