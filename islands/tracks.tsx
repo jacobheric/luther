@@ -52,7 +52,9 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
         {
           <div className="my-4 flex flex-row justify-between items-center w-full">
-            {!devicesLoaded ? null : devices?.length === 0
+            {!devicesLoaded || !selected.length
+              ? null
+              : devices?.length === 0
               ? (
                 <div>
                   No devices found. You must have spotify open to play. Open
