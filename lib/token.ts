@@ -45,6 +45,8 @@ export const refreshSpotifyToken = async (
 
     const refreshedToken = await response.json();
 
+    console.log("spotify refreshed token", refreshedToken);
+
     return refreshedToken
       ? {
         ...refreshedToken,

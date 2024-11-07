@@ -19,7 +19,9 @@ export const searchSong = async (
 
   const result = await response.json();
 
-  const track = result.tracks.items[0];
+  console.log("spotify search result", result);
+
+  const track = result?.tracks.items[0];
   return track;
 };
 

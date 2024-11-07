@@ -1,6 +1,6 @@
 import { type PageProps } from "fresh";
 import { Partial } from "fresh/runtime";
-import Menu from "tabler-icons/tsx/menu.tsx";
+import Nav from "@/components/nav.tsx";
 
 export default function Layout({ Component }: PageProps) {
   return (
@@ -17,9 +17,7 @@ export default function Layout({ Component }: PageProps) {
               </a>
             </h2>
           </div>
-          <div className="cursor-not-allowed" title="Login coming soon...">
-            <Menu />
-          </div>
+          <Nav />
         </div>
         <div class="flex justify-center sm:w-[90%] md:max-w-6xl md:mx-auto">
           <Partial name="overlay-content">

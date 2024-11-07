@@ -6,7 +6,9 @@ export const About = () => (
       them on spotify for you.
     </p>
     <p>
-      Head on over the the <a href="/signup">signup page</a> to get started.
+      Head on over to the <a href="/signup">signup</a> page to get starter or
+      {" "}
+      <a href="/login">login</a> if you already have an account!
     </p>
   </div>
 );
