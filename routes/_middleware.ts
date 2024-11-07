@@ -12,6 +12,7 @@ import "@std/dotenv/load";
 import { createSupabaseClient } from "@/lib/supabase.ts";
 import { Session } from "@supabase/supabase-js";
 import { redirect } from "@/lib/utils.ts";
+import { PRODUCTION } from "@/lib/config.ts";
 
 export type SignedInState = {
   session: Session;
@@ -107,26 +108,6 @@ const spotifyTokenHandler = async (
   const nextResp = await ctx.next();
   appendHeaders(resp, nextResp);
   return nextResp;
-};
-
-const spotifyCookieHandler = async (
-  ctx: FreshContext<{ spotifyToken: TokenData }>,
-) => {
-  const url = new URL(ctx.req.url);
-  if (
-    unrestrictedSpotify.some((route) => url.pathname.startsWith(route))
-  ) {
-    return ctx.next();
-  }
-  const response = await ctx.next();
-
-  if (ctx.state.spotifyToken) {
-    const modifiedResponse = new Response(response.body, response);
-    setTokenCookie(modifiedResponse.headers, ctx.state.spotifyToken);
-    return modifiedResponse;
-  }
-
-  return response;
 };
 
 export const handler = [authHandler, spotifyTokenHandler];
