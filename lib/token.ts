@@ -1,6 +1,7 @@
 import { getCookies, setCookie } from "@std/http/cookie";
 import { FreshContext } from "fresh";
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
+import { redirect } from "@/lib/utils.ts";
 
 export type TokenData = {
   access_token: string;
@@ -8,10 +9,7 @@ export type TokenData = {
   expires_at: number;
 };
 
-export const spotifyLoginRedirect = new Response("", {
-  status: 307,
-  headers: { Location: "/spotify/login" },
-});
+export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
 export const setTokenCookie = (headers: Headers, tokenData: TokenData) =>
   setCookie(headers, {

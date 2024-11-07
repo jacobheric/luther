@@ -46,7 +46,7 @@ export default function SpotifyLogin(
           className="border border-gray-200 p-3 rounded-m"
           type="submit"
         >
-          Login To Spotify
+          Authorize Luther on Spotify
         </button>
       </form>
     </div>

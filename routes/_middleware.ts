@@ -1,11 +1,5 @@
 import { FreshContext } from "fresh";
 
-import "@std/dotenv/load";
-import {
-  BASIC_AUTH_PASSWORD,
-  BASIC_AUTH_USER,
-  PRODUCTION,
-} from "@/lib/config.ts";
 import {
   getSpotifyToken,
   refreshSpotifyToken,
@@ -13,21 +7,50 @@ import {
   spotifyLoginRedirect,
   TokenData,
 } from "@/lib/token.ts";
+import "@std/dotenv/load";
+
+import { createSupabaseClient } from "@/lib/supabase.ts";
+import { Session } from "@supabase/supabase-js";
+import { redirect } from "@/lib/utils.ts";
+
+export type SignedInState = {
+  session: Session;
+};
+
+export type SignedOutState = {
+  session?: null;
+};
+
+export type AuthState = SignedInState | SignedOutState;
 
 const unrestricted = [
   "/about",
+  "/login",
+  "/signup",
+  "/password",
+  "/logout",
+];
+
+const unrestrictedSpotify = [
+  ...unrestricted,
   "/spotify/login",
   "/api/spotify/access-token",
 ];
 
-const authHandler = (
-  ctx: FreshContext,
+const appendHeaders = (oldResponse: Response, newResponse: Response) => {
+  for (const [key, value] of [...oldResponse.headers]) {
+    newResponse.headers.set(key, value);
+  }
+};
+
+const authHandler = async (
+  ctx: FreshContext<AuthState>,
 ) => {
   const url = new URL(ctx.req.url);
 
-  if (!PRODUCTION) {
-    return ctx.next();
-  }
+  // if (!PRODUCTION) {
+  //   return ctx.next();
+  // }
 
   if (
     unrestricted.some((route) => url.pathname.startsWith(route))
@@ -35,17 +58,23 @@ const authHandler = (
     return ctx.next();
   }
 
-  if (
-    ctx.req.headers.get("Authorization") !==
-      `Basic ${btoa(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASSWORD}`)}`
-  ) {
-    const headers = new Headers({
-      "WWW-Authenticate": 'Basic realm="Listen to Luther"',
-    });
-    return new Response("Unauthorized", { status: 401, headers });
+  const resp = new Response();
+  const supabase = createSupabaseClient(ctx.req, resp);
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  //  const { data: userData } = await supabase.auth.getUser();
+
+  ctx.state.session = sessionData.session;
+
+  if (!ctx.state.session) {
+    return redirect(
+      "/about",
+    );
   }
 
-  return ctx.next();
+  const nextResp = await ctx.next();
+  appendHeaders(resp, nextResp);
+  return nextResp;
 };
 
 const spotifyTokenHandler = async (
@@ -53,7 +82,7 @@ const spotifyTokenHandler = async (
 ) => {
   const url = new URL(ctx.req.url);
   if (
-    unrestricted.some((route) => url.pathname.startsWith(route))
+    unrestrictedSpotify.some((route) => url.pathname.startsWith(route))
   ) {
     return ctx.next();
   }
@@ -61,18 +90,23 @@ const spotifyTokenHandler = async (
   const token = getSpotifyToken(ctx);
 
   if (!token) {
-    return spotifyLoginRedirect;
+    return spotifyLoginRedirect();
   }
 
   const refreshedToken = await refreshSpotifyToken(token);
 
   if (!refreshedToken) {
-    return spotifyLoginRedirect;
+    return spotifyLoginRedirect();
   }
 
   ctx.state.spotifyToken = refreshedToken;
 
-  return ctx.next();
+  const resp = new Response();
+
+  setTokenCookie(resp.headers, ctx.state.spotifyToken);
+  const nextResp = await ctx.next();
+  appendHeaders(resp, nextResp);
+  return nextResp;
 };
 
 const spotifyCookieHandler = async (
@@ -80,7 +114,7 @@ const spotifyCookieHandler = async (
 ) => {
   const url = new URL(ctx.req.url);
   if (
-    unrestricted.some((route) => url.pathname.startsWith(route))
+    unrestrictedSpotify.some((route) => url.pathname.startsWith(route))
   ) {
     return ctx.next();
   }
@@ -95,4 +129,4 @@ const spotifyCookieHandler = async (
   return response;
 };
 
-export const handler = [authHandler, spotifyTokenHandler, spotifyCookieHandler];
+export const handler = [authHandler, spotifyTokenHandler];
