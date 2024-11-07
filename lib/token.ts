@@ -43,9 +43,15 @@ export const refreshSpotifyToken = async (
       body,
     });
 
-    const refreshedToken = await response.json();
+    if (!response.ok) {
+      console.error(
+        "error refreshing spotify token, redirecting to spotify login",
+        response,
+      );
+      return null;
+    }
 
-    console.log("spotify refreshed token", refreshedToken);
+    const refreshedToken = await response.json();
 
     return refreshedToken
       ? {
