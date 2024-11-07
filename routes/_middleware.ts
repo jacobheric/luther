@@ -48,9 +48,9 @@ const authHandler = async (
 ) => {
   const url = new URL(ctx.req.url);
 
-  // if (!PRODUCTION) {
-  //   return ctx.next();
-  // }
+  if (!PRODUCTION) {
+    return ctx.next();
+  }
 
   if (
     unrestricted.some((route) => url.pathname.startsWith(route))
