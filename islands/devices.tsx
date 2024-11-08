@@ -37,12 +37,11 @@ export const Devices = (
       </div>
     )
     : (
-      <div className="flex flex-row justify-start items-center">
+      <div className="flex flex-row justify-start items-center gap-2">
         <span className="hidden md:inline">Devices:</span>
         <select
           name="device"
           id="device"
-          className="border-gray-200 rounded mx-3 w-full p-1"
         >
           {devices.map(({ id, name }: any) => (
             <option className="px-2 mx-2" value={id}>{name}</option>

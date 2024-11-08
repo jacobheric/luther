@@ -51,7 +51,6 @@ const Index = (
       <form method="post" id="prompt">
         <div className="mx-auto mt-12 flex flex-row justify-center items-center gap-2">
           <input
-            className="border border-gray-200 p-3 rounded w-full"
             type="text"
             name="prompt"
             placeholder="what do you want to listen to?"

@@ -52,9 +52,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                 {submitting && <Loader2 className="animate-spin" />}
                 {message ? message : null}
                 <button
-                  className={`border border-gray-200 bg-gray-100 p-3 rounded ${
-                    submitting ? "cursor-not-allowed" : ""
-                  }`}
+                  className={`${submitting ? "cursor-not-allowed" : ""}`}
                   type="submit"
                   disabled={submitting}
                   onClick={() => setSubmitType("queue")}
@@ -62,9 +60,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                   Queue
                 </button>
                 <button
-                  className={`border border-gray-200 bg-gray-100 p-3 rounded ${
-                    submitting ? "cursor-not-allowed" : ""
-                  }`}
+                  className={`${submitting ? "cursor-not-allowed" : ""}`}
                   type="submit"
                   disabled={submitting}
                   onClick={() => setSubmitType("play")}
@@ -83,7 +79,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
               } border-gray-200 w-full mb-2 pb-2`}
             >
               <button
-                className="border hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3 bg-gray-100"
+                className="hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3 "
                 onClick={(e: any) => {
                   e.preventDefault();
                   setSelected(selected.filter((_, index) => i !== index));

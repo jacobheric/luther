@@ -37,13 +37,12 @@ export default function Login(
   { data }: PageProps<{ error?: AuthError }>,
 ) {
   return (
-    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 prose">
+    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6">
       {data?.error && <p class="text-red-500">{data?.error?.message}</p>}
       <form method="post">
         <div class="flex flex-col gap-4">
           <label for="email">Email</label>
           <input
-            className="border border-gray-200 p-3 rounded w-full"
             type="email"
             name="email"
             required
@@ -51,13 +50,12 @@ export default function Login(
 
           <label for="password">Password</label>
           <input
-            className="border border-gray-200 p-3 rounded w-full"
             type="password"
             name="password"
             required
           />
           <button
-            className={`border border-gray-200 bg-gray-100 p-3 rounded `}
+            className={` p-3 rounded `}
             type="submit"
           >
             Login

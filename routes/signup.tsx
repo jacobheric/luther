@@ -67,8 +67,8 @@ export default function Login(
   { data }: PageProps<{ success?: boolean; error?: Error; siteKey: string }>,
 ) {
   return (
-    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 prose">
-      <div>
+    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 ">
+      <div class="prose dark:prose-invert">
         Listen to Luther is still learning to get his groove on. Sign up and
         we'll send you an invite when he's fully rockin'.
       </div>
@@ -79,7 +79,6 @@ export default function Login(
           <div class="flex flex-col">
             <label for="email">Email</label>
             <input
-              className="border border-gray-200 p-3 rounded "
               type="email"
               name="email"
               required
@@ -89,7 +88,7 @@ export default function Login(
             /* <div class="flex flex-col">
             <label for="password">Password</label>
             <input
-              className="border border-gray-200 p-3 rounded sm:-[90%] md:w-[586px]"
+
               type="password"
               name="password"
               required
@@ -97,10 +96,7 @@ export default function Login(
           </div> */
           }
 
-          <button
-            className={`border border-gray-200 bg-gray-100 p-3 rounded `}
-            type="submit"
-          >
+          <button type="submit">
             Sign up
           </button>
         </div>

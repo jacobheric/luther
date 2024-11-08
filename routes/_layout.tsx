@@ -2,7 +2,8 @@ import { type PageProps } from "fresh";
 import { Partial } from "fresh/runtime";
 import { Nav } from "@/islands/nav.tsx";
 
-export default function Layout({ Component }: PageProps) {
+export default function Layout(ctx: PageProps) {
+  const pathname = new URL(ctx.req.url).pathname;
   return (
     <div className="flex flex-col min-h-screen justify-between">
       <div className="flex flex-col justify-start">
@@ -17,11 +18,13 @@ export default function Layout({ Component }: PageProps) {
               </a>
             </h2>
           </div>
-          <Nav />
+          <Nav
+            pathname={pathname}
+          />
         </div>
         <div class="flex justify-center sm:w-[90%] px-4 md:max-w-6xl md:mx-auto">
           <Partial name="overlay-content">
-            <Component />
+            <ctx.Component />
           </Partial>
         </div>
       </div>

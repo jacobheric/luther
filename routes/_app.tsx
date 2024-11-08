@@ -17,7 +17,7 @@ function App({ Component, state }: PageProps<never, State>) {
 
         {state.script && <script src={state.script} defer />}
       </head>
-      <body>
+      <body class="text-black dark:text-white bg-white dark:bg-gray-900">
         <Component />
       </body>
     </html>
