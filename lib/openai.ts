@@ -12,16 +12,20 @@ export const getSongs = async (prompt: string) => {
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
+    temperature: 1,
     messages: [{
+      role: "system",
+      content:
+        "You are a helpful assistant named Luther that is a DJ and music expert.",
+    }, {
       role: "user",
-      content: `List songs that fit the following prompt. Try to provide
-        least 20 songs, unless the prompst is asking for a specific result. 
-        Sort the songs that are most relevant to the prompt first.
-        Don't provide any other information, 
-        just a list of songs with no unnumeration in the 
-        format of "Song Name -- Album Name -- Artist Name". 
-        
+      content:
+        `List at least 20 songs based on the following prompt, unless the prompt is for a specifc thing. 
+        Ensure the songs and album names are accurate and pulled from recognized discographies. 
+        Format the response strictly as "Song Name -- Album Name -- Artist Name" 
+        without any additional formatting or enumeration. 
+
         Prompt: ### 
         ${prompt}
         ###`,
@@ -30,12 +34,11 @@ export const getSongs = async (prompt: string) => {
 
   const content = completion.choices[0].message.content;
 
-  const songs = content?.split("\n").filter(
-    (song: string) => song.trim(),
-  );
+  const songs = content?.split("\n")
+    ?.map((data) => {
+      const [song, album, artist] = data.split(" -- ").map((s) => s.trim());
+      return { song, album, artist };
+    });
 
-  return songs?.map((data) => {
-    const [song, album, artist] = data.split(" -- ");
-    return { song, album, artist };
-  });
+  return songs;
 };

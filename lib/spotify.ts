@@ -8,8 +8,11 @@ export const searchSong = async (
     encodeURIComponent(artist)
   }"`;
 
+  const searchQuery =
+    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`;
+
   const response = await fetch(
-    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`,
+    searchQuery,
     {
       headers: {
         "Authorization": `Bearer ${token.access_token}`,
@@ -18,6 +21,7 @@ export const searchSong = async (
   );
 
   const result = await response.json();
+
   const track = result?.tracks?.items[0];
   return track;
 };

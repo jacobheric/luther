@@ -23,10 +23,7 @@ export const Nav = () => {
     <div
       ref={dropdownRef}
       class="relative flex flex-row items-center"
-      onClick={() => {
-        console.log("clicked", showDropdown);
-        setShowDropdown(!showDropdown);
-      }}
+      onClick={() => setShowDropdown(!showDropdown)}
     >
       <div class="flex flex-col items-center justify-center w-10 h-4 rounded cursor-pointer">
         <span class="block w-5 h-0.5 bg-gray-700 mb-1"></span>
