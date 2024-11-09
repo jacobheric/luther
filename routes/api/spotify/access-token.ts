@@ -1,27 +1,58 @@
-import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from "@/lib/config.ts";
-import { SpotifyApi } from "@spotify/web-api-ts-sdk";
+import {
+  SPOTIFY_AUTH,
+  SPOTIFY_CLIENT_ID,
+  SPOTIFY_CLIENT_SECRET,
+  SPOTIFY_TOKEN_URL,
+} from "@/lib/config.ts";
 
-import { spotifyAuthenticated, spotifySDK } from "@/lib/spotify.ts";
 import { define } from "@/lib/state.ts";
+import { setSpotifyTokenCookie } from "@/lib/token.ts";
 
 export const handler = define.handlers({
-  async POST(ctx) {
+  async GET(ctx) {
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
       throw new Error("Spotify client id or secret missing");
     }
 
-    const token = await ctx.req.json();
-
-    spotifySDK.value = SpotifyApi.withAccessToken(SPOTIFY_CLIENT_ID, token);
-
-    if (!await spotifyAuthenticated()) {
-      return new Response("Spotify Authorization Failed", {
-        status: 401,
-      });
+    if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
+      throw new Error("Spotify client id or secret missing");
     }
 
-    return new Response("", {
-      status: 200,
+    const code = ctx.url.searchParams.get("code");
+
+    if (!code) {
+      throw new Error("Spotify authorization code missing");
+    }
+
+    const body = new URLSearchParams();
+    body.append("code", code);
+    body.append("grant_type", "authorization_code");
+    body.append(
+      "redirect_uri",
+      `${ctx.url.origin}/api/spotify/access-token`,
+    );
+
+    const apiResponse = await fetch(SPOTIFY_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${SPOTIFY_AUTH}`,
+      },
+      body,
     });
+
+    const token = await apiResponse.json();
+
+    if (!token || !token.access_token) {
+      throw new Error("Failed to get get spotify token");
+    }
+
+    const response = new Response("", {
+      status: 307,
+      headers: { Location: "/" },
+    });
+
+    setSpotifyTokenCookie(response.headers, token);
+    return response;
   },
 });

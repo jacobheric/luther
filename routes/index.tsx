@@ -22,7 +22,6 @@ export const handler = define.handlers({
     }
 
     const songs = await searchSongs(rawSongs);
-
     return page({ prompt, songs });
   },
   GET() {

@@ -2,10 +2,16 @@ import { FreshContext } from "fresh";
 
 import "@std/dotenv/load";
 
-import { PRODUCTION } from "@/lib/config.ts";
-import { spotifyAuthenticated, spotifyLoginRedirect } from "@/lib/spotify.ts";
+import { PRODUCTION, SPOTIFY_CLIENT_ID } from "@/lib/config.ts";
+import {
+  spotifyAuthenticated,
+  spotifyLoginRedirect,
+  spotifySDK,
+} from "@/lib/spotify.ts";
 import { createSupabaseClient } from "@/lib/supabase.ts";
+import { getSpotifyTokenCookie } from "@/lib/token.ts";
 import { redirect } from "@/lib/utils.ts";
+import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 import { Session } from "@supabase/supabase-js";
 
 export type SignedInState = {
@@ -84,6 +90,17 @@ const spotifyAuthHandler = async (
   ) {
     return ctx.next();
   }
+
+  const token = getSpotifyTokenCookie(ctx);
+
+  if (!token) {
+    return spotifyLoginRedirect();
+  }
+
+  spotifySDK.value = SpotifyApi.withAccessToken(
+    SPOTIFY_CLIENT_ID!,
+    token,
+  );
 
   if (!(await spotifyAuthenticated())) {
     return spotifyLoginRedirect();
