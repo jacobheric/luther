@@ -13,7 +13,6 @@ export const handler = define.handlers({
     }
 
     await play(
-      ctx.state.spotifyToken,
       device,
       uris.map((uri) => uri.toString()),
     );

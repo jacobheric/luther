@@ -1,11 +1,10 @@
 import { Go } from "@/islands/go.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
-import { SPOTIFY_CLIENT_ID } from "@/lib/config.ts";
 import { getSongs } from "@/lib/openai.ts";
 import { searchSongs } from "@/lib/spotify.ts";
 import { define } from "@/lib/state.ts";
-import { getSpotifyToken } from "@/lib/token.ts";
 import { page, PageProps } from "fresh";
+import { type Track } from "@spotify/web-api-ts-sdk";
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -22,29 +21,17 @@ export const handler = define.handlers({
       return page({ prompt, songs: [] });
     }
 
-    const songs = await searchSongs(ctx.state.spotifyToken, rawSongs);
+    const songs = await searchSongs(rawSongs);
+
     return page({ prompt, songs });
   },
-  async GET(ctx) {
-    if (!SPOTIFY_CLIENT_ID) {
-      throw new Error("spotify key not found!");
-    }
-
-    const token = await getSpotifyToken(ctx);
-
-    if (!token) {
-      return new Response("", {
-        status: 307,
-        headers: { Location: "/spotify/login" },
-      });
-    }
-
+  GET() {
     return page();
   },
 });
 
 const Index = (
-  { data }: PageProps<{ prompt: string; songs: any[] }>,
+  { data }: PageProps<{ prompt: string; songs: Track[] }>,
 ) => {
   return (
     <div className="flex flex-col w-full">

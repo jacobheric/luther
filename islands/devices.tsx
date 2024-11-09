@@ -1,10 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
+import { type Device } from "@spotify/web-api-ts-sdk";
 
 export const Devices = (
   { tracks, devices, setDevices }: {
     tracks: boolean;
-    devices: any[];
-    setDevices: (devices: any[]) => void;
+    devices: Device[];
+    setDevices: (devices: Device[]) => void;
   },
 ) => {
   const [devicesLoaded, setDevicesLoaded] = useState(false);
@@ -43,8 +44,8 @@ export const Devices = (
           name="device"
           id="device"
         >
-          {devices.map(({ id, name }: any) => (
-            <option className="px-2 mx-2" value={id}>{name}</option>
+          {devices.map(({ id, name }: Device) => (
+            <option className="px-2 mx-2" value={id || ""}>{name}</option>
           ))}
         </select>
       </div>

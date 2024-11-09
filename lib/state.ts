@@ -1,9 +1,7 @@
-import { createDefine } from "fresh";
 import type { Session } from "@supabase/supabase-js";
-import { TokenData } from "@/lib/token.ts";
+import { createDefine } from "fresh";
 
 export interface State {
-  spotifyToken: TokenData;
   title?: string;
   description?: string;
   noIndex?: boolean;

@@ -1,57 +1,53 @@
-import { TokenData } from "@/lib/token.ts";
+import { type Device, SpotifyApi, type Track } from "@spotify/web-api-ts-sdk";
+import { signal } from "@preact/signals";
+import { redirect } from "@/lib/utils.ts";
 
-export const searchSong = async (
-  token: TokenData,
-  { song, artist }: { song: string; album: string; artist: string },
-) => {
-  const query = `track:"${encodeURIComponent(song)}" artist:"${
-    encodeURIComponent(artist)
-  }"`;
+export const spotifySDK = signal<SpotifyApi | null>(null);
 
-  const searchQuery =
-    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`;
+export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
-  const response = await fetch(
-    searchQuery,
-    {
-      headers: {
-        "Authorization": `Bearer ${token.access_token}`,
-      },
-    },
-  );
-
-  const result = await response.json();
-
-  const track = result?.tracks?.items[0];
-  return track;
+export const spotifyAuthenticated = async () => {
+  try {
+    const user = await spotifySDK.value?.currentUser.profile();
+    return user !== undefined;
+  } catch (e) {
+    console.warn("user not authenticated with spotify", e);
+    return false;
+  }
 };
 
-export const getDevices = async (token: TokenData) => {
-  const response = await fetch("https://api.spotify.com/v1/me/player/devices", {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token.access_token}`,
-      "Content-Type": "application/json",
-    },
-  });
+export const searchSong = async (
+  { song, artist }: { song: string; album: string; artist: string },
+): Promise<Track> => {
+  if (!spotifySDK.value) {
+    throw new Error("spotify sdk not initialized");
+  }
 
-  const { devices } = await response.json();
+  const query = `track:"${song}" artist:"${artist}"`;
+  const result = await spotifySDK.value?.search(query, ["track"], undefined, 1);
 
-  return devices;
+  return result.tracks.items[0];
+};
+
+export const getDevices = async (): Promise<Device[]> => {
+  const resuit = await spotifySDK.value?.player.getAvailableDevices();
+  return resuit?.devices ? resuit.devices : [];
 };
 
 export const queue = async (
-  token: TokenData,
   deviceId: string,
   uris: string[],
 ) => {
   for await (const uri of uris) {
+    //
+    // sdk operation for this is busted, resort to fetch api
+    // https://github.com/spotify/web-api-ts-sdk/issues/101
     await fetch(
       `https://api.spotify.com/v1/me/player/queue?device_id=${deviceId}&uri=${uri}`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token.access_token}`,
+          "Authorization": `Bearer ${spotifySDK.value?.getAccessToken()}`,
           "Content-Type": "application/json",
         },
       },
@@ -60,30 +56,16 @@ export const queue = async (
 };
 
 export const play = async (
-  token: TokenData,
   deviceId: string,
   uris: string[],
 ) =>
-  await fetch(
-    `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-    {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${token.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        uris: uris,
-      }),
-    },
-  );
+  await spotifySDK.value?.player.startResumePlayback(deviceId, undefined, uris);
 
 export const searchSongs = async (
-  token: TokenData,
   songs: { song: string; album: string; artist: string }[],
-) => {
+): Promise<Track[]> => {
   const spotifyTracks = await Promise.all(
-    songs.map(async (song) => await searchSong(token, song)),
+    songs.map(async (song) => await searchSong(song)),
   );
 
   return spotifyTracks;

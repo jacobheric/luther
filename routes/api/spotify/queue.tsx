@@ -13,9 +13,8 @@ export const handler = define.handlers({
     }
 
     await queue(
-      ctx.state.spotifyToken,
       device,
-      uris.map((uri) => uri.toString()),
+      uris.map((uri) => uri?.toString()),
     );
 
     return new Response(null, { status: 200 });

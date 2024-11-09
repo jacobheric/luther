@@ -1,20 +1,23 @@
 import { Devices } from "@/islands/devices.tsx";
 import { useState } from "preact/hooks";
 import Loader2 from "tabler-icons/tsx/loader-2.tsx";
+import { type Device, Image, type Track } from "@spotify/web-api-ts-sdk";
+import { type FormEvent } from "preact/compat";
 
-export const Tracks = ({ tracks }: { tracks?: any[] }) => {
-  const [selected, setSelected] = useState<any[]>(tracks || []);
-  const [devices, setDevices] = useState<any[]>([]);
+export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
+  const [selected, setSelected] = useState<Track[]>(tracks || []);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submitType, setSubmitType] = useState("play");
 
-  const submit = async (e: any) => {
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     setSubmitting(true);
     e.preventDefault();
 
     // Extract form data
-    const form = e.target as HTMLFormElement;
+    const form = e.currentTarget;
+
     const formData = new FormData(form);
 
     const response = submitType === "queue"
@@ -71,7 +74,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
             )}
           </div>
         }
-        {selected?.map((song, i) => (
+        {selected?.map((song: Track, i: number) => (
           song && (
             <div
               className={`flex flex-row justify-start items-center gap-4 ${
@@ -80,7 +83,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
             >
               <button
                 className="hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3 "
-                onClick={(e: any) => {
+                onClick={(e: MouseEvent) => {
                   e.preventDefault();
                   setSelected(selected.filter((_, index) => i !== index));
                 }}
@@ -90,7 +93,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
               <div>
                 <img
                   className="w-[65px] h-[65px] object-fill"
-                  src={song.album.images.find((i: any) => i.height === 300)
+                  src={song.album.images.find((i: Image) => i.height === 300)
                     ?.url}
                 />
               </div>

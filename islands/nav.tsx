@@ -7,10 +7,10 @@ export const Nav = (
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
-    const clickAway = (event: any) => {
+    const clickAway = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
+        !dropdownRef.current.contains(event.target as Node)
       ) {
         setShowDropdown(false);
       }
