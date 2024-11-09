@@ -25,6 +25,10 @@ export const getSpotifyToken = (ctx: FreshContext) =>
 export const refreshSpotifyToken = async (
   rawToken: string,
 ) => {
+  if (!rawToken) {
+    return null;
+  }
+
   const token = JSON.parse(
     decodeURIComponent(rawToken),
   );

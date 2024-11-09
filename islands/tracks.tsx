@@ -89,7 +89,9 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
               </button>
               <div>
                 <img
-                  src={song.album.images.find((i: any) => i.height === 64)?.url}
+                  className="w-[65px] h-[65px] object-fill"
+                  src={song.album.images.find((i: any) => i.height === 300)
+                    ?.url}
                 />
               </div>
               <div>
@@ -97,7 +99,7 @@ export const Tracks = ({ tracks }: { tracks?: any[] }) => {
                   <span className="text-gray-400">song:</span> {song.name}
                 </div>
                 <div>
-                  <span className="text-gray-400">album:</span>
+                  <span className="text-gray-400">album:</span>{" "}
                   {song.album.name}
                 </div>
                 <div>
