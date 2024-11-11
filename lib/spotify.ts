@@ -68,5 +68,5 @@ export const searchSongs = async (
     songs.map(async (song) => await searchSong(song)),
   );
 
-  return spotifyTracks;
+  return spotifyTracks.filter((track: Track | undefined) => track);
 };

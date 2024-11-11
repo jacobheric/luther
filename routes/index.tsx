@@ -6,7 +6,12 @@ import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
 import { type Track } from "@spotify/web-api-ts-sdk";
 
-export const handler = define.handlers({
+type SearchType = { prompt?: string; songs?: Track[]; error?: string };
+const NOT_FOUND = "No songs found, try adjusting your prompt.";
+
+export const handler = define.handlers<
+  SearchType | undefined
+>({
   async POST(ctx) {
     const form = await ctx.req.formData();
     const prompt = form.get("prompt")?.toString();
@@ -18,10 +23,15 @@ export const handler = define.handlers({
     const rawSongs = await getSongs(prompt);
 
     if (!rawSongs || rawSongs.length === 0) {
-      return page({ prompt, songs: [] });
+      return page({ prompt, error: NOT_FOUND });
     }
 
     const songs = await searchSongs(rawSongs);
+
+    if (!songs || songs.length === 0) {
+      return page({ prompt, error: NOT_FOUND });
+    }
+
     return page({ prompt, songs });
   },
   GET() {
@@ -30,7 +40,7 @@ export const handler = define.handlers({
 });
 
 const Index = (
-  { data }: PageProps<{ prompt: string; songs: Track[] }>,
+  { data }: PageProps<SearchType | undefined>,
 ) => {
   return (
     <div className="flex flex-col w-full">
@@ -46,6 +56,11 @@ const Index = (
           <Go />
         </div>
       </form>
+      {data?.error && (
+        <div class="prose dark:prose-invert my-6">
+          {data.error}
+        </div>
+      )}
       <Tracks tracks={data?.songs} />
     </div>
   );

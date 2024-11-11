@@ -24,7 +24,7 @@ export const getSongs = async (prompt: string) => {
         `List at least 20 songs based on the following prompt, unless the prompt is for a specifc thing. 
         Ensure the songs and album names are accurate and likely to be found on Spotify. 
         Format the response strictly as "Song Name -- Album Name -- Artist Name" 
-        without any additional formatting or enumeration. 
+        without any additional information or enumeration. 
 
         Prompt: ### 
         ${prompt}
@@ -40,5 +40,5 @@ export const getSongs = async (prompt: string) => {
       return { song, album, artist };
     });
 
-  return songs;
+  return songs?.filter((song) => song.song && song.album && song.artist);
 };
