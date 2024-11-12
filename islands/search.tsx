@@ -1,13 +1,14 @@
+import { IS_BROWSER } from "fresh/runtime";
 import { useEffect, useState } from "preact/hooks";
 
-// const getStoredPrompt = () =>
-//   IS_BROWSER ? globalThis.localStorage.getItem("storedPrompt") ?? "" : "";
+const getStoredPrompt = () =>
+  IS_BROWSER ? globalThis.localStorage.getItem("storedPrompt") ?? "" : "";
 
-// const storePrompt = (prompt: string) => {
-//   if (IS_BROWSER) {
-//     globalThis.localStorage.setItem("storedPrompt", prompt);
-//   }
-// };
+const storePrompt = (prompt: string) => {
+  if (IS_BROWSER) {
+    globalThis.localStorage.setItem("storedPrompt", prompt);
+  }
+};
 
 export const Search = ({ prompt }: { prompt?: string }) => {
   const [submitting, setSubmitting] = useState(false);
@@ -17,19 +18,19 @@ export const Search = ({ prompt }: { prompt?: string }) => {
     document.getElementById("promptForm")?.addEventListener(
       "submit",
       () => {
-        // storePrompt(
-        //   (document.getElementById("prompt") as HTMLInputElement)?.value || "",
-        // );
+        storePrompt(
+          (document.getElementById("prompt") as HTMLInputElement)?.value || "",
+        );
         setSubmitting(true);
       },
     );
   }, []);
 
-  // useEffect(() => {
-  //   if (prompt) {
-  //     globalThis.localStorage.removeItem("storedPrompt");
-  //   }
-  // }, [prompt]);
+  useEffect(() => {
+    if (prompt) {
+      globalThis.localStorage.removeItem("storedPrompt");
+    }
+  }, [prompt]);
 
   return (
     <div className="mx-auto mt-12 flex flex-row justify-center items-center gap-2">
@@ -39,7 +40,7 @@ export const Search = ({ prompt }: { prompt?: string }) => {
         name="prompt"
         placeholder="what do you want to listen to?"
         required
-        defaultValue={prompt}
+        defaultValue={prompt || getStoredPrompt()}
       />
       <button
         disabled={submitting}
