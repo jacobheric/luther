@@ -7,7 +7,7 @@ export const spotifyLoginRedirect = () => redirect("/spotify/login");
 export const searchSong = async (
   token: SpotifyToken,
   { song, artist }: { song: string; album: string; artist: string },
-): Promise<Track> => {
+): Promise<Track | undefined> => {
   const query = `track:"${encodeURIComponent(song)}" artist:"${
     encodeURIComponent(artist)
   }"`;
