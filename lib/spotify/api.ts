@@ -26,7 +26,7 @@ export const searchSong = async (
 
   if (!response.ok) {
     console.error("error searching for song", response);
-    return undefined;
+    throw new Error("There was an error searching Spotify for a song!");
   }
 
   const result = await response.json();
@@ -97,5 +97,5 @@ export const searchSongs = async (
     songs.map(async (song) => await searchSong(token, song)),
   );
 
-  return spotifyTracks.filter((track: Track | undefined) => track);
+  return spotifyTracks.filter((track: Track) => track);
 };

@@ -17,5 +17,17 @@ export default function ErrorPage(props: PageProps) {
 
   console.error("fatal error", error);
 
-  return <h1>uh oh...</h1>;
+  return (
+    <div class="flex flex-col items-center justify-center gap-4 mt-8">
+      <div>
+        <h1 class="font-bold">uh oh...</h1>
+      </div>
+      <div class="prose dark:prose-invert">
+        Luther is Still learning! Sometimes he runs into trouble. There's some
+        pretty raw error info below that may be of some help. Or, you can try to
+        refresh or <a href="/logout">logout</a>{"  "}and login and try again!
+      </div>
+      <div class="prose dark:prose-invert">{error + ""}</div>
+    </div>
+  );
 }
