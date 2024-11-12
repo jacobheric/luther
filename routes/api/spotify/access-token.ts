@@ -6,7 +6,7 @@ import {
 } from "@/lib/config.ts";
 
 import { define } from "@/lib/state.ts";
-import { setSpotifyTokenCookie } from "@/lib/token.ts";
+import { setSpotifyToken } from "@/lib/token.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {
@@ -52,7 +52,10 @@ export const handler = define.handlers({
       headers: { Location: "/" },
     });
 
-    setSpotifyTokenCookie(response.headers, token);
+    setSpotifyToken(response.headers, {
+      ...token,
+      expires: Date.now() + (token.expires_in * 1000),
+    });
     return response;
   },
 });

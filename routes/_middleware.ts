@@ -2,16 +2,15 @@ import { FreshContext } from "fresh";
 
 import "@std/dotenv/load";
 
-import { PRODUCTION, SPOTIFY_CLIENT_ID } from "@/lib/config.ts";
-import {
-  spotifyAuthenticated,
-  spotifyLoginRedirect,
-  spotifySDK,
-} from "@/lib/spotify.ts";
+import { PRODUCTION } from "@/lib/config.ts";
+import { spotifyLoginRedirect } from "@/lib/spotify.ts";
 import { createSupabaseClient } from "@/lib/supabase.ts";
-import { getSpotifyTokenCookie } from "@/lib/token.ts";
+import {
+  getSpotifyToken,
+  refreshSpotifyToken,
+  setSpotifyToken,
+} from "@/lib/token.ts";
 import { redirect } from "@/lib/utils.ts";
-import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 import { Session } from "@supabase/supabase-js";
 
 export type SignedInState = {
@@ -81,8 +80,8 @@ const authHandler = async (
 //
 // the spotify ts sdk handles auth tokens and refresh interally
 // so we just look for an active user session
-const spotifyAuthHandler = async (
-  ctx: FreshContext,
+const spotifyTokenHandler = async (
+  ctx: FreshContext<{ spotifyToken?: SpotifyToken }>,
 ) => {
   const url = new URL(ctx.req.url);
   if (
@@ -91,22 +90,26 @@ const spotifyAuthHandler = async (
     return ctx.next();
   }
 
-  const token = getSpotifyTokenCookie(ctx);
+  const token = getSpotifyToken(ctx);
 
   if (!token) {
     return spotifyLoginRedirect();
   }
 
-  spotifySDK.value = SpotifyApi.withAccessToken(
-    SPOTIFY_CLIENT_ID!,
-    token,
-  );
+  const refreshedToken = await refreshSpotifyToken(token);
 
-  if (!(await spotifyAuthenticated())) {
+  if (!refreshedToken) {
     return spotifyLoginRedirect();
   }
 
-  return ctx.next();
+  ctx.state.spotifyToken = refreshedToken;
+
+  const resp = new Response();
+
+  setSpotifyToken(resp.headers, ctx.state.spotifyToken);
+  const nextResp = await ctx.next();
+  appendHeaders(resp, nextResp);
+  return nextResp;
 };
 
-export const handler = [authHandler, spotifyAuthHandler];
+export const handler = [authHandler, spotifyTokenHandler];

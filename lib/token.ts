@@ -3,7 +3,7 @@ import { redirect } from "@/lib/utils.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
 import { FreshContext } from "fresh";
 
-export type TokenData = {
+export type SpotifyToken = {
   access_token: string;
   refresh_token: string;
   expires_at: number;
@@ -11,9 +11,9 @@ export type TokenData = {
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
-export const setSpotifyTokenCookie = (
+export const setSpotifyToken = (
   headers: Headers,
-  token: Record<string, string>,
+  token: SpotifyToken,
 ) =>
   setCookie(headers, {
     name: "spotifyToken",
@@ -22,27 +22,28 @@ export const setSpotifyTokenCookie = (
     maxAge: 400 * 24 * 60 * 60,
   });
 
-export const getSpotifyTokenCookie = (ctx: FreshContext) => {
+export const getSpotifyToken = (ctx: FreshContext) => {
+  const rawToken = getCookies(ctx.req.headers).spotifyToken;
+
+  if (!rawToken) {
+    console.warn("no spotify token cookie, redirecting to spotify login");
+    return null;
+  }
+
   try {
-    return JSON.parse(
-      decodeURIComponent(getCookies(ctx.req.headers).spotifyToken),
-    );
+    return JSON.parse(decodeURIComponent(rawToken));
   } catch (e) {
-    console.warn("no spotify token cookie", e);
+    console.error("parsing spotify token cookie failed", e);
     return null;
   }
 };
 
 export const refreshSpotifyToken = async (
-  rawToken: string,
+  token: SpotifyToken | null,
 ) => {
-  if (!rawToken) {
+  if (!token) {
     return null;
   }
-
-  const token = JSON.parse(
-    decodeURIComponent(rawToken),
-  );
 
   if (Date.now() >= token.expires_at) {
     const body = new URLSearchParams();
