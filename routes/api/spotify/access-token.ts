@@ -54,7 +54,7 @@ export const handler = define.handlers({
 
     setSpotifyToken(response.headers, {
       ...token,
-      expires: Date.now() + (token.expires_in * 1000),
+      expires_at: Date.now() + (token.expires_in * 1000),
     });
     return response;
   },
