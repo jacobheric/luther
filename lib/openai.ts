@@ -12,7 +12,7 @@ export const getSongs = async (prompt: string) => {
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     temperature: 1,
     messages: [{
       role: "system",
