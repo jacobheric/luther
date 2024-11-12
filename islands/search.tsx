@@ -1,10 +1,14 @@
+import { IS_BROWSER } from "fresh/runtime";
 import { useEffect, useState } from "preact/hooks";
 
 const getStoredPrompt = () =>
-  globalThis.localStorage.getItem("storedPrompt") ?? "";
+  IS_BROWSER ? globalThis.localStorage.getItem("storedPrompt") ?? "" : "";
 
-const storePrompt = (prompt: string) =>
-  globalThis.localStorage.setItem("storedPrompt", prompt);
+const storePrompt = (prompt: string) => {
+  if (IS_BROWSER) {
+    globalThis.localStorage.setItem("storedPrompt", prompt);
+  }
+};
 
 export const Search = ({ prompt }: { prompt?: string }) => {
   const [submitting, setSubmitting] = useState(false);
