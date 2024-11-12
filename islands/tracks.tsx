@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import Loader2 from "tabler-icons/tsx/loader-2.tsx";
 import { type Device, Image, type Track } from "@spotify/web-api-ts-sdk";
 import { type FormEvent } from "preact/compat";
+import Tooltip from "@/islands/tooltip.tsx";
 
 export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   const [selected, setSelected] = useState<Track[]>(tracks || []);
@@ -10,6 +11,8 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submitType, setSubmitType] = useState("play");
+
+  const ready = () => devices.length && !submitting;
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     setSubmitting(true);
@@ -43,37 +46,41 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   return (
     <form onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        {
-          <div className="my-4 flex flex-row justify-between items-center w-full">
+        <div className="my-4 flex flex-row justify-between items-center w-full">
+          <div>
             <Devices
               tracks={selected.length > 0}
               devices={devices}
               setDevices={setDevices}
             />
-            {devices?.length > 0 && selected.length > 0 && (
-              <div className="flex flex-row justify-end items-center gap-2">
-                {submitting && <Loader2 className="animate-spin" />}
-                {message ? message : null}
+          </div>
+          {selected.length > 0 && (
+            <div className="flex flex-row justify-end items-center gap-2">
+              {submitting && <Loader2 className="animate-spin" />}
+              {message ? message : null}
+              <Tooltip tooltip={!ready() ? "No devices found" : undefined}>
                 <button
-                  className={`${submitting ? "cursor-not-allowed" : ""}`}
+                  className={`${!ready() ? "cursor-not-allowed" : ""}`}
                   type="submit"
-                  disabled={submitting}
+                  disabled={!ready()}
                   onClick={() => setSubmitType("queue")}
                 >
                   Queue
                 </button>
+              </Tooltip>
+              <Tooltip tooltip={!ready() ? "No devices found" : undefined}>
                 <button
-                  className={`${submitting ? "cursor-not-allowed" : ""}`}
+                  className={`${!ready() ? "cursor-not-allowed" : ""}`}
                   type="submit"
-                  disabled={submitting}
+                  disabled={!ready()}
                   onClick={() => setSubmitType("play")}
                 >
                   Play
                 </button>
-              </div>
-            )}
-          </div>
-        }
+              </Tooltip>
+            </div>
+          )}
+        </div>
         {selected?.map((song: Track, i: number) => (
           song && (
             <div
