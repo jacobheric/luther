@@ -24,6 +24,11 @@ export const searchSong = async (
     },
   );
 
+  if (!response.ok) {
+    console.error("error searching for song", response);
+    return undefined;
+  }
+
   const result = await response.json();
 
   const track = result?.tracks?.items[0];
