@@ -1,4 +1,4 @@
-import { Go } from "@/islands/go.tsx";
+import { Search } from "@/islands/search.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
 import { getSongs } from "@/lib/openai.ts";
 import { searchSongs } from "@/lib/spotify.ts";
@@ -44,17 +44,8 @@ const Index = (
 ) => {
   return (
     <div className="flex flex-col w-full">
-      <form method="post" id="prompt">
-        <div className="mx-auto mt-12 flex flex-row justify-center items-center gap-2">
-          <input
-            type="text"
-            name="prompt"
-            placeholder="what do you want to listen to?"
-            defaultValue={data?.prompt}
-            required
-          />
-          <Go />
-        </div>
+      <form method="post" id="promptForm">
+        <Search prompt={data?.prompt} />
       </form>
       {data?.error && (
         <div class="prose dark:prose-invert my-6">

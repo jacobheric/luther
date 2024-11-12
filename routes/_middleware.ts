@@ -9,6 +9,7 @@ import {
   getSpotifyToken,
   refreshSpotifyToken,
   setSpotifyToken,
+  SpotifyToken,
 } from "@/lib/token.ts";
 import { redirect } from "@/lib/utils.ts";
 import { Session } from "@supabase/supabase-js";
@@ -81,7 +82,7 @@ const authHandler = async (
 // the spotify ts sdk handles auth tokens and refresh interally
 // so we just look for an active user session
 const spotifyTokenHandler = async (
-  ctx: FreshContext<{ spotifyToken?: SpotifyToken }>,
+  ctx: FreshContext<{ spotifyToken: SpotifyToken }>,
 ) => {
   const url = new URL(ctx.req.url);
   if (
