@@ -1,4 +1,4 @@
-import { SpotifyToken } from "@/lib/token.ts";
+import { SpotifyToken } from "./token.ts";
 import { redirect } from "@/lib/utils.ts";
 import { type Device, type Track } from "@spotify/web-api-ts-sdk";
 

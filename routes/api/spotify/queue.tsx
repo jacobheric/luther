@@ -1,6 +1,5 @@
 import { define } from "@/lib/state.ts";
-
-import { queue } from "@/lib/spotify.ts";
+import { queue } from "@/lib/spotify/api.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {

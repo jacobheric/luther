@@ -82,7 +82,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
               } border-gray-200 w-full mb-2 pb-2`}
             >
               <button
-                className="hover:border-red-500 hover:bg-red-100 hover:text-red-500 p-3 "
+                className="hover:border-red-500 hover:bg-red-100 hover:text-red-500 h-8 w-8 flex items-center justify-center"
                 onClick={(e: MouseEvent) => {
                   e.preventDefault();
                   setSelected(selected.filter((_, index) => i !== index));
@@ -91,11 +91,13 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                 X
               </button>
               <div>
-                <img
-                  className="w-[65px] h-[65px] object-fill"
-                  src={song.album.images.find((i: Image) => i.height === 300)
-                    ?.url}
-                />
+                <div className="w-[65px] h-[65px] flex items-center justify-center">
+                  <img
+                    className="object-fill rounded"
+                    src={song.album.images.find((i: Image) => i.height === 300)
+                      ?.url}
+                  />
+                </div>
               </div>
               <div>
                 <div>

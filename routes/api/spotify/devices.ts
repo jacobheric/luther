@@ -1,5 +1,5 @@
 import { define } from "@/lib/state.ts";
-import { getDevices } from "@/lib/spotify.ts";
+import { getDevices } from "@/lib/spotify/api.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {

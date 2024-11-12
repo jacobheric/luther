@@ -3,14 +3,14 @@ import { FreshContext } from "fresh";
 import "@std/dotenv/load";
 
 import { PRODUCTION } from "@/lib/config.ts";
-import { spotifyLoginRedirect } from "@/lib/spotify.ts";
+import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
 import { createSupabaseClient } from "@/lib/supabase.ts";
 import {
   getSpotifyToken,
   refreshSpotifyToken,
   setSpotifyToken,
   SpotifyToken,
-} from "@/lib/token.ts";
+} from "@/lib/spotify/token.ts";
 import { redirect } from "@/lib/utils.ts";
 import { Session } from "@supabase/supabase-js";
 

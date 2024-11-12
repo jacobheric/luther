@@ -6,7 +6,7 @@ import { FreshContext } from "fresh";
 export type SpotifyToken = {
   access_token: string;
   refresh_token: string;
-  expires_at: number;
+  expires: number;
 };
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
@@ -45,7 +45,7 @@ export const refreshSpotifyToken = async (
     return null;
   }
 
-  if (Date.now() >= token.expires_at) {
+  if (Date.now() >= token.expires) {
     const body = new URLSearchParams();
     body.append("grant_type", "refresh_token");
     body.append("refresh_token", token.refresh_token);

@@ -1,7 +1,7 @@
 import { Search } from "@/islands/search.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
 import { getSongs } from "@/lib/openai.ts";
-import { searchSongs } from "@/lib/spotify.ts";
+import { searchSongs } from "@/lib/spotify/api.ts";
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
 import { type Track } from "@spotify/web-api-ts-sdk";

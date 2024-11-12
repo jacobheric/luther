@@ -6,7 +6,7 @@ import {
 } from "@/lib/config.ts";
 
 import { define } from "@/lib/state.ts";
-import { setSpotifyToken } from "@/lib/token.ts";
+import { setSpotifyToken } from "@/lib/spotify/token.ts";
 
 export const handler = define.handlers({
   async GET(ctx) {
