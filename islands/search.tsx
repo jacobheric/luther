@@ -51,7 +51,7 @@ export const Search = (
           <select
             name="mode"
             id="mode"
-            className="w-[65px] p-0"
+            className="w-[65px] p-0 text-right"
           >
             <option selected={mode === "smart"} className="" value="smart">
               smart
