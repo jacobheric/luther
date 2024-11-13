@@ -12,6 +12,7 @@ input {
   @apply border border-gray-200 dark:bg-gray-900 p-3 rounded w-full;
 }
 
+
 select {
   @apply dark:bg-gray-900 p-3 rounded w-full;
 }
