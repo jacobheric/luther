@@ -49,7 +49,9 @@ export const Devices = (
         : <div>None Found</div>}
       <Tooltip tooltip="Reload devices" className="top-6">
         <Reload
-          className={`cursor-pointer w-5 h-5 ${loading && "animate-spin"}`}
+          className={`cursor-pointer w-[18px] h-[18px] ${
+            loading && "animate-spin"
+          }`}
           onClick={getDevices}
         />
       </Tooltip>
@@ -57,7 +59,7 @@ export const Devices = (
         tooltip="Spotify must be open to be found."
         className="top-6 "
       >
-        <InfoCircle className="w-5 h-5" />
+        <InfoCircle className="w-[18px] h-[18px]" />
       </Tooltip>
     </div>
   );

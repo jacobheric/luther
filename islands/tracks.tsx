@@ -46,7 +46,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   return (
     <form onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between items-start w-full">
+        <div className="my-4 flex flex-row justify-between items-center w-full">
           <Devices
             tracks={selected.length > 0}
             devices={devices}
