@@ -55,6 +55,25 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
           />
           {selected.length > 0 && (
             <div className="flex flex-row justify-end items-center gap-2">
+              {
+                /* <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  (document.getElementById(
+                    "add-to-playlist",
+                  ) as HTMLDialogElement)?.showModal();
+                }}
+                submitting={submitting === "playlist"}
+                success={success === "playlist"}
+                error={error === "playlist"}
+              >
+                + Playlist
+              </Button>
+              <Modal id="add-to-playlist" title="Add to Playlist">
+                <PlaylistModal modalId="add-to-playlist" tracks={selected} />
+              </Modal> */
+              }
+
               <Tooltip
                 className="top-14 right-2"
                 tooltip={!ready() ? "No devices found" : undefined}
@@ -67,7 +86,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                   success={success === "queue"}
                   error={error === "queue"}
                 >
-                  Queue
+                  + Queue
                 </Button>
               </Tooltip>
               <Tooltip

@@ -1,6 +1,10 @@
 import { SpotifyToken } from "./token.ts";
 import { redirect } from "@/lib/utils.ts";
-import { type Device, type Track } from "@spotify/web-api-ts-sdk";
+import {
+  type Device,
+  type Playlist,
+  type Track,
+} from "@spotify/web-api-ts-sdk";
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
@@ -46,6 +50,29 @@ export const getDevices = async (token: SpotifyToken): Promise<Device[]> => {
 
   const { devices } = await response.json();
   return devices || [];
+};
+
+export const getPlaylists = async (
+  token: SpotifyToken,
+): Promise<Playlist[]> => {
+  const response = await fetch(
+    "https://api.spotify.com/v1/me/playlists?limit=50",
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    console.error("error getting playlists", response);
+    throw new Error("There was an error getting your playlists!");
+  }
+
+  const { items } = await response.json();
+  return items || [];
 };
 
 export const queue = async (

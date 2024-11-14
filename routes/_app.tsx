@@ -12,7 +12,7 @@ function App({ Component, state }: PageProps<never, State>) {
           name="description"
           content={state.description || "Your interactive AI DJ"}
         />
-
+        <link rel="icon" type="image/svg+xml" href="/luther.svg" />
         <link rel="stylesheet" href="/styles.css" />
 
         {state.script && <script src={state.script} defer />}

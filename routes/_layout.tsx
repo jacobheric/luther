@@ -1,9 +1,11 @@
 import { type PageProps } from "fresh";
 import { Partial } from "fresh/runtime";
 import { Nav } from "@/islands/nav.tsx";
+import { Logo } from "@/components/logo.tsx";
 
 export default function Layout(ctx: PageProps) {
   const pathname = new URL(ctx.req.url).pathname;
+
   return (
     <div className="flex flex-col min-h-screen justify-between">
       <div className="flex flex-col justify-start">
@@ -11,10 +13,16 @@ export default function Layout(ctx: PageProps) {
           <div>
             <h2 class="font-bold tracking-widest">
               <a
-                class="no-underline"
+                class="no-underline flex flex-row justify-start items-center gap-1"
                 href="/"
               >
-                Listen to Luther
+                <div className="flex flex-row justify-start items-center">
+                  <Logo className="w-4 fill-black dark:fill-white" />isten
+                </div>
+                <div>to</div>
+                <div className="flex flex-row justify-start items-center">
+                  <Logo className="w-4 fill-black dark:fill-white" /> uther
+                </div>
               </a>
             </h2>
           </div>
