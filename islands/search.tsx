@@ -11,7 +11,7 @@ const storePrompt = (prompt: string) => {
 };
 
 export const Search = (
-  { prompt, mode }: { prompt?: string; mode?: string },
+  { prompt }: { prompt?: string; mode?: string },
 ) => {
   const [submitting, setSubmitting] = useState(false);
 
@@ -46,7 +46,8 @@ export const Search = (
           defaultValue={prompt || getStoredPrompt()}
           className="rounded-b-none"
         />
-        <div className="flex flex-row justify-start items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
+        {
+          /* <div className="flex flex-row justify-start items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
           <div className="w-16">I prefer:</div>
           <select
             name="mode"
@@ -63,7 +64,8 @@ export const Search = (
               recent
             </option>
           </select>
-        </div>
+        </div> */
+        }
       </div>
       <button
         disabled={submitting}

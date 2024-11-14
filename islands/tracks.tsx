@@ -46,19 +46,20 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   return (
     <form onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between items-center w-full">
-          <div>
-            <Devices
-              tracks={selected.length > 0}
-              devices={devices}
-              setDevices={setDevices}
-            />
-          </div>
+        <div className="my-4 flex flex-row justify-between items-start w-full">
+          <Devices
+            tracks={selected.length > 0}
+            devices={devices}
+            setDevices={setDevices}
+          />
           {selected.length > 0 && (
             <div className="flex flex-row justify-end items-center gap-2">
               {submitting && <Loader2 className="animate-spin" />}
               {message ? message : null}
-              <Tooltip tooltip={!ready() ? "No devices found" : undefined}>
+              <Tooltip
+                className="top-14 right-2"
+                tooltip={!ready() ? "No devices found" : undefined}
+              >
                 <button
                   className={`${!ready() ? "cursor-not-allowed" : ""}`}
                   type="submit"
@@ -68,7 +69,10 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                   Queue
                 </button>
               </Tooltip>
-              <Tooltip tooltip={!ready() ? "No devices found" : undefined}>
+              <Tooltip
+                className="top-14 right-2"
+                tooltip={!ready() ? "No devices found" : undefined}
+              >
                 <button
                   className={`${!ready() ? "cursor-not-allowed" : ""}`}
                   type="submit"

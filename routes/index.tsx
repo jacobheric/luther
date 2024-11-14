@@ -29,7 +29,7 @@ export const handler = define.handlers<
     const rawSongs = await getSongs(prompt, mode);
 
     if (!rawSongs || rawSongs.length === 0) {
-      return page({ prompt, moerror: NOT_FOUND });
+      return page({ prompt, mode, error: NOT_FOUND });
     }
 
     const songs = await searchSongs(ctx.state.spotifyToken, rawSongs);
