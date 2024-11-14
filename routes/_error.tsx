@@ -27,7 +27,11 @@ export default function ErrorPage(props: PageProps) {
         pretty raw error info below that may be of some help. Or, you can try to
         refresh or <a href="/logout">logout</a>{"  "}and login and try again!
       </div>
-      <div class="prose dark:prose-invert">{error + ""}</div>
+      <div class="prose dark:prose-invert">
+        {typeof error === "object"
+          ? JSON.stringify(error, null, 2)
+          : String(error)}
+      </div>
     </div>
   );
 }

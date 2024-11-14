@@ -1,21 +1,27 @@
-import { useState } from "preact/hooks";
 import { ComponentChildren } from "preact";
+import { useState } from "preact/hooks";
 
 const Tooltip = (
-  { children, tooltip }: { children: ComponentChildren; tooltip?: string },
+  { children, tooltip, className }: {
+    children: ComponentChildren;
+    tooltip?: string;
+    className?: string;
+  },
 ) => {
   const [isVisible, setIsVisible] = useState(false);
 
   return tooltip
     ? (
       <div
-        className="relative inline-block"
+        className={`relative inline-block `}
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
       >
         {children}
         {isVisible && (
-          <div class="absolute top-14 right-2 rounded border bg-white dark:bg-gray-900 transition-opacity duration-300 p-2 shadow flex items-center justify-center whitespace-nowrap">
+          <div
+            class={`absolute rounded border bg-white dark:bg-gray-900 transition-opacity duration-300 p-2 shadow flex items-center justify-center whitespace-nowrap ${className}`}
+          >
             {tooltip}
           </div>
         )}
