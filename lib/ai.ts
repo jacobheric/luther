@@ -1,7 +1,7 @@
 import "@std/dotenv/load";
 
+import { OPENAI_API_KEY } from "@/lib/config.ts";
 import OpenAI from "openai";
-import { GROK_API_KEY, OPENAI_API_KEY } from "@/lib/config.ts";
 
 const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
 // const grok = GROK_API_KEY && new OpenAI({
