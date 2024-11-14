@@ -2,8 +2,8 @@ import "@std/dotenv/load";
 import OpenAI from "openai";
 import { GROK_API_KEY, OPENAI_API_KEY } from "@/lib/config.ts";
 
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-const grok = new OpenAI({
+const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
+const grok = GROK_API_KEY && new OpenAI({
   apiKey: GROK_API_KEY,
   baseURL: "https://api.x.ai/v1",
 });
