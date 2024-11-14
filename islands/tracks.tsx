@@ -1,21 +1,22 @@
+import { Button } from "@/islands/button.tsx";
 import { Devices } from "@/islands/devices.tsx";
-import { useState } from "preact/hooks";
-import Loader2 from "tabler-icons/tsx/loader-2.tsx";
+import Tooltip from "@/islands/tooltip.tsx";
 import { type Device, Image, type Track } from "@spotify/web-api-ts-sdk";
 import { type FormEvent } from "preact/compat";
-import Tooltip from "@/islands/tooltip.tsx";
+import { useState } from "preact/hooks";
 
 export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   const [selected, setSelected] = useState<Track[]>(tracks || []);
   const [devices, setDevices] = useState<Device[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [submitType, setSubmitType] = useState("play");
+  const [submitting, setSubmitting] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitType, setSubmitType] = useState<null | string>("play");
 
   const ready = () => devices.length && !submitting;
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
-    setSubmitting(true);
+    setSubmitting(submitType);
     e.preventDefault();
 
     // Extract form data
@@ -34,19 +35,19 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
       });
 
     if (!response.ok) {
+      setError(submitType);
       throw new Error(`Error: ${response.statusText}`);
     }
 
     await response.text();
-    setSubmitting(false);
-    setMessage("Done!");
-    setTimeout(() => setMessage(""), 3000);
+    setSubmitting(null);
+    setSuccess(submitType);
   };
 
   return (
     <form onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between items-center w-full">
+        <div className="my-4 flex flex-row justify-between items-center w-full gap-2">
           <Devices
             tracks={selected.length > 0}
             devices={devices}
@@ -54,33 +55,35 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
           />
           {selected.length > 0 && (
             <div className="flex flex-row justify-end items-center gap-2">
-              {submitting && <Loader2 className="animate-spin" />}
-              {message ? message : null}
               <Tooltip
                 className="top-14 right-2"
                 tooltip={!ready() ? "No devices found" : undefined}
               >
-                <button
-                  className={`${!ready() ? "cursor-not-allowed" : ""}`}
+                <Button
                   type="submit"
                   disabled={!ready()}
                   onClick={() => setSubmitType("queue")}
+                  submitting={submitting === "queue"}
+                  success={success === "queue"}
+                  error={error === "queue"}
                 >
                   Queue
-                </button>
+                </Button>
               </Tooltip>
               <Tooltip
                 className="top-14 right-2"
                 tooltip={!ready() ? "No devices found" : undefined}
               >
-                <button
-                  className={`${!ready() ? "cursor-not-allowed" : ""}`}
+                <Button
                   type="submit"
                   disabled={!ready()}
                   onClick={() => setSubmitType("play")}
+                  submitting={submitting === "play"}
+                  success={success === "play"}
+                  error={error === "play"}
                 >
                   Play
-                </button>
+                </Button>
               </Tooltip>
             </div>
           )}

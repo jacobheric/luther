@@ -1,10 +1,12 @@
 import { Search } from "@/islands/search.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
-import { getSongs } from "@/lib/ai.ts";
+import { getSongs } from "@/lib/ai/ai.ts";
 import { searchSongs } from "@/lib/spotify/api.ts";
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
 import { type Track } from "@spotify/web-api-ts-sdk";
+import { testSongs } from "@/lib/test/data.ts";
+import { TEST_SONGS } from "@/lib/config.ts";
 
 type SearchType = {
   prompt?: string;
@@ -41,6 +43,9 @@ export const handler = define.handlers<
     return page({ prompt, songs, mode });
   },
   GET() {
+    if (TEST_SONGS) {
+      return page({ prompt: "tom petty deep cuts", songs: testSongs });
+    }
     return page();
   },
 });

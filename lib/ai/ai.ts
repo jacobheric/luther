@@ -1,13 +1,6 @@
 import "@std/dotenv/load";
-
-import { OPENAI_API_KEY } from "@/lib/config.ts";
-import OpenAI from "openai";
-
-const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
-// const grok = GROK_API_KEY && new OpenAI({
-//   apiKey: GROK_API_KEY,
-//   baseURL: "https://api.x.ai/v1",
-// });
+import { completion as openAICompletion } from "@/lib/ai/openai.ts";
+import { completion as grokCompletion } from "@/lib/ai/grok.ts";
 
 const getInput = (prompt: string, mode: string) => ({
   model: mode === "smart"
@@ -37,14 +30,9 @@ const getInput = (prompt: string, mode: string) => ({
 export const getSongs = async (prompt: string, mode: string = "smart") => {
   const input = getInput(prompt, mode);
 
-  if (!openai) {
-    throw Error("open ai sdk not instantiated");
-  }
-
-  const completion = await openai.chat.completions.create(input);
-  //
-  // coming soon
-  // ? await grok.chat.completions.create(input)
+  const completion = mode === "recent"
+    ? await grokCompletion(input)
+    : await openAICompletion(input);
 
   const content = completion.choices[0].message.content;
 

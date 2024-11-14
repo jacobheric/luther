@@ -19,7 +19,6 @@ export const Devices = (
   }
 
   const getDevices = async () => {
-    setLoading(true);
     const response = await fetch(`/api/spotify/devices`);
     setDevices(JSON.parse(await response.text()));
     setDevicesLoaded(true);
@@ -42,24 +41,25 @@ export const Devices = (
             className="p-0 text-right"
           >
             {devices.map(({ id, name }: Device) => (
-              <option className="px-2 mx-2" value={id || ""}>{name}</option>
+              <option className="px-2 mx-2 " value={id || ""}>{name}</option>
             ))}
           </select>
         )
         : <div>None Found</div>}
-      <Tooltip tooltip="Reload devices" className="top-6">
+      <Tooltip tooltip="Reload devices" className="top-6 -translate-x-1/2">
         <Reload
-          className={`cursor-pointer w-[18px] h-[18px] ${
-            loading && "animate-spin"
-          }`}
-          onClick={getDevices}
+          className={`cursor-pointer w-5 h-5 ${loading && "animate-spin"}`}
+          onClick={() => {
+            setLoading(true);
+            getDevices();
+          }}
         />
       </Tooltip>
       <Tooltip
         tooltip="Spotify must be open to be found."
-        className="top-6 "
+        className="top-6 -translate-x-1/2"
       >
-        <InfoCircle className="w-[18px] h-[18px]" />
+        <InfoCircle className="w-5 h-5" />
       </Tooltip>
     </div>
   );
