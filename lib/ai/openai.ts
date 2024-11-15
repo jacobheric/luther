@@ -8,6 +8,7 @@ export const completion = async (
   input: ChatCompletionCreateParamsNonStreaming,
 ) => {
   if (!openai) {
+    console.error("open ai sdk not instantiated");
     throw Error("open ai sdk not instantiated");
   }
 
