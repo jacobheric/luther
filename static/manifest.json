@@ -1,0 +1,18 @@
+{
+  "short_name": "Luther",
+  "name": "Listen to Luther",
+  "icons": [
+    {
+      "src": "/luther-icon-small.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/luther-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone"
+}

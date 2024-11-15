@@ -14,6 +14,7 @@ function App({ Component, state }: PageProps<never, State>) {
         />
         <link rel="icon" type="image/svg+xml" href="/luther.svg" />
         <link rel="stylesheet" href="/styles.css" />
+        <link rel="manifest" href="/manifest.json" />
 
         {state.script && <script src={state.script} defer />}
       </head>
