@@ -37,7 +37,7 @@ export const Modal = (
     <dialog
       ref={dialogRef}
       id={id}
-      className="p-4 mx-auto mt-16 rounded"
+      className="p-4 mx-auto mt-16 rounded w-full md:max-w-[500px] shadow-md"
       onClick={(e) => {
         const dialog = e.target as HTMLDialogElement;
         if (dialog.tagName === "DIALOG") {
@@ -45,8 +45,8 @@ export const Modal = (
         }
       }}
     >
-      <div className="flex flex-col items-start justify-start w-full h-full gap-4">
-        <div className="flex flex-row justify-between items-center min-w-96">
+      <div className="flex flex-col items-start justify-start gap-4 w-full">
+        <div className="flex flex-row justify-between items-center w-full">
           <h3 className="font-bold text-lg">{title}</h3>
           <X
             className="w-5 h-5 cursor-pointer"

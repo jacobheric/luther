@@ -13,7 +13,12 @@ input {
 }
 
 select {
-  @apply dark:bg-gray-900 bg-white p-3 rounded w-full;
+  @apply border border-gray-200 dark:bg-gray-900 bg-white p-3 rounded w-full
+    appearance-none pr-10 text-gray-900 dark:text-white;
+  background-image: url("/chevron.svg");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1em;
 }
 
 button {

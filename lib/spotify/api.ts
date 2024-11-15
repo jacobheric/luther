@@ -4,6 +4,7 @@ import {
   type Device,
   type Playlist,
   type Track,
+  type User,
 } from "@spotify/web-api-ts-sdk";
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
@@ -106,6 +107,84 @@ export const play = async (
     `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
     {
       method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uris: uris,
+      }),
+    },
+  );
+
+export const createPlaylist = async (
+  token: SpotifyToken,
+  playlistName?: string,
+) => {
+  const userResponse = await fetch(
+    `https://api.spotify.com/v1/me`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!userResponse.ok) {
+    console.error("error creating playlist, couldn't get user", userResponse);
+    throw new Error("There was an error creating your playlist!");
+  }
+
+  const user: User = await userResponse.json();
+
+  const playlistResponse = await fetch(
+    `https://api.spotify.com/v1/users/${user.id}/playlists`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: playlistName,
+        public: false,
+      }),
+    },
+  );
+
+  if (!playlistResponse.ok) {
+    console.error("error creating playlist", playlistResponse);
+    throw new Error("There was an error creating your playlist!");
+  }
+
+  return await playlistResponse.json();
+};
+
+export const upsertPlaylist = async (
+  token: SpotifyToken,
+  uris: string[],
+  playlistId?: string,
+  playlistName?: string,
+) => {
+  if (!playlistId) {
+    const { id } = await createPlaylist(token, playlistName);
+    return await addToPlaylist(token, uris, id);
+  }
+
+  return await addToPlaylist(token, uris, playlistId);
+};
+
+export const addToPlaylist = async (
+  token: SpotifyToken,
+  uris: string[],
+  playlistId: string,
+) =>
+  await fetch(
+    `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+    {
+      method: "POST",
       headers: {
         "Authorization": `Bearer ${token.access_token}`,
         "Content-Type": "application/json",

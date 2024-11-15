@@ -9,23 +9,22 @@ export default function Layout(ctx: PageProps) {
   return (
     <div className="flex flex-col min-h-screen justify-between">
       <div className="flex flex-col justify-start">
-        <div class="border-b p-4 flex flex-row justify-between ">
-          <div>
-            <h2 class="font-bold tracking-widest">
-              <a
-                class="no-underline flex flex-row justify-start items-center gap-1"
-                href="/"
-              >
-                <div className="flex flex-row justify-start items-center">
-                  <Logo className="w-4 fill-black dark:fill-white" />isten
-                </div>
-                <div>to</div>
-                <div className="flex flex-row justify-start items-center">
-                  <Logo className="w-4 fill-black dark:fill-white" /> uther
-                </div>
-              </a>
-            </h2>
+        <div class="border-b p-4 flex flex-row justify-between">
+          <div class="font-bold tracking-widest">
+            <a
+              class="no-underline flex flex-row justify-start items-center gap-1"
+              href="/"
+            >
+              <div className="flex flex-row justify-start items-center">
+                <Logo className="w-4 fill-black dark:fill-white" />isten
+              </div>
+              <div>to</div>
+              <div className="flex flex-row justify-start items-center">
+                <Logo className="w-4 fill-black dark:fill-white" /> uther
+              </div>
+            </a>
           </div>
+
           <Nav
             pathname={pathname}
           />

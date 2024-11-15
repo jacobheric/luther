@@ -1,11 +1,16 @@
 import { Button } from "@/islands/button.tsx";
 import { Devices } from "@/islands/devices.tsx";
+import { Modal } from "@/islands/modal.tsx";
+import { PlaylistModal } from "@/islands/playlist.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
 import { type Device, Image, type Track } from "@spotify/web-api-ts-sdk";
 import { type FormEvent } from "preact/compat";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 
 export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
+  const playListNameRef = useRef<HTMLInputElement>(null);
+  const playListIdRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [selected, setSelected] = useState<Track[]>(tracks || []);
   const [devices, setDevices] = useState<Device[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
@@ -19,9 +24,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
     setSubmitting(submitType);
     e.preventDefault();
 
-    // Extract form data
     const form = e.currentTarget;
-
     const formData = new FormData(form);
 
     const response = submitType === "queue"
@@ -29,7 +32,12 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
         method: "POST",
         body: formData,
       })
-      : await fetch("/api/spotify/play", {
+      : submitType === "play"
+      ? await fetch("/api/spotify/play", {
+        method: "POST",
+        body: formData,
+      })
+      : await fetch("/api/spotify/playlist", {
         method: "POST",
         body: formData,
       });
@@ -45,9 +53,9 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   };
 
   return (
-    <form onSubmit={submit}>
+    <form ref={formRef} onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between items-center w-full gap-2">
+        <div className="my-4 flex flex-row justify-between items-center w-full gap-2 flex-wrap">
           <Devices
             tracks={selected.length > 0}
             devices={devices}
@@ -55,10 +63,10 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
           />
           {selected.length > 0 && (
             <div className="flex flex-row justify-end items-center gap-2">
-              {
-                /* <Button
+              <Button
                 onClick={(e) => {
                   e.preventDefault();
+                  setSubmitType("playlist");
                   (document.getElementById(
                     "add-to-playlist",
                   ) as HTMLDialogElement)?.showModal();
@@ -69,10 +77,23 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
               >
                 + Playlist
               </Button>
+              <input ref={playListIdRef} type="hidden" name="playlistId" />
+              <input ref={playListNameRef} type="hidden" name="playlistName" />
               <Modal id="add-to-playlist" title="Add to Playlist">
-                <PlaylistModal modalId="add-to-playlist" tracks={selected} />
-              </Modal> */
-              }
+                <PlaylistModal
+                  modalId="add-to-playlist"
+                  add={(playlistId, playlistName) => {
+                    playListIdRef.current!.value = playlistId || "";
+                    playListNameRef.current!.value = playlistName || "";
+
+                    const submitEvent = new Event("submit", {
+                      cancelable: true,
+                      bubbles: true,
+                    });
+                    formRef.current!.dispatchEvent(submitEvent);
+                  }}
+                />
+              </Modal>
 
               <Tooltip
                 className="top-14 right-2"

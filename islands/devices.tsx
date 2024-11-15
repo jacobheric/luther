@@ -31,21 +31,20 @@ export const Devices = (
 
   return (
     <div className="flex flex-row justify-start items-center gap-2">
-      <span className="hidden md:inline">Devices:</span>
-      {devices?.length > 0
-        ? (
-          <select
-            name="device"
-            id="device"
-            disabled={!devicesLoaded || devices?.length === 0}
-            className="p-0 text-right"
-          >
-            {devices.map(({ id, name }: Device) => (
-              <option className="px-2 mx-2 " value={id || ""}>{name}</option>
-            ))}
-          </select>
-        )
-        : <div>None Found</div>}
+      <span>Devices:</span>
+
+      <select
+        name="device"
+        id="device"
+        disabled={!devicesLoaded || devices?.length === 0}
+        className="min-w-[180px]"
+      >
+        {devices?.length === 0 && <option value="">None Found</option>}
+        {devices.map(({ id, name }: Device) => (
+          <option className="px-2 mx-2" value={id || ""}>{name}</option>
+        ))}
+      </select>
+
       <Tooltip tooltip="Reload devices" className="top-6 -translate-x-1/2">
         <Reload
           className={`cursor-pointer w-5 h-5 ${loading && "animate-spin"}`}
@@ -55,12 +54,15 @@ export const Devices = (
           }}
         />
       </Tooltip>
-      <Tooltip
-        tooltip="Spotify must be open to be found."
-        className="top-6 -translate-x-1/2"
-      >
-        <InfoCircle className="w-5 h-5" />
-      </Tooltip>
+      {devices?.length === 0 &&
+        (
+          <Tooltip
+            tooltip="Spotify must be open to be found."
+            className="top-6 -translate-x-1/2"
+          >
+            <InfoCircle className="w-5 h-5" />
+          </Tooltip>
+        )}
     </div>
   );
 };

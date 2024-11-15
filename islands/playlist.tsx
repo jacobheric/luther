@@ -1,13 +1,16 @@
-import { type Playlist, type Track } from "@spotify/web-api-ts-sdk";
+import { Button } from "@/islands/button.tsx";
+import { type Playlist } from "@spotify/web-api-ts-sdk";
+import { type FormEvent } from "preact/compat";
 import { useEffect, useState } from "preact/hooks";
 
 export const PlaylistModal = (
-  { tracks }: { tracks?: Track[] },
+  { modalId, add }: {
+    modalId: string;
+    add: (playlistId?: string, playlistName?: string) => void;
+  },
 ) => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  if (!tracks) {
-    return null;
-  }
+  const [playlist, setPlaylist] = useState<string>("");
 
   const getPlaylists = async () => {
     const response = await fetch(`/api/spotify/playlists`);
@@ -19,21 +22,62 @@ export const PlaylistModal = (
     getPlaylists();
   }, []);
 
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const playlistId = formData.get("playlistId")?.toString();
+    const playlistName = formData.get("playlistName")?.toString();
+    add(playlistId, playlistName);
+    (document.getElementById(modalId) as HTMLDialogElement)?.close();
+  };
+
   return (
-    <div className="flex flex-row justify-start items-center gap-2 w-full">
-      {playlists?.length > 0
-        ? (
+    <form onSubmit={submit} className="w-full">
+      <div className="flex flex-col justify-start items-center w-full">
+        <>
+          <label className="w-full text-sm font-semibold">
+            Existing or new?
+          </label>
           <select
-            name="playlist"
-            id="playlist"
-            className="p-0  w-full"
+            name="playlistId"
+            id="playlistId"
+            className="w-full border"
+            onChange={(e) => setPlaylist((e.target as HTMLSelectElement).value)}
+            class="w-full"
           >
+            <option className="p-3 m-3" value="" selected>New playlist</option>
             {playlists.map(({ id, name }: Playlist) => (
-              <option className="px-2 mx-2 " value={id || ""}>{name}</option>
+              <option className="p-3 m-3" value={id || ""}>{name}</option>
             ))}
           </select>
-        )
-        : <div>No Playlists Found</div>}
-    </div>
+        </>
+
+        {playlist === "" &&
+          (
+            <input
+              type="text"
+              name="playlistName"
+              id="playlistName"
+              className="w-full mt-4"
+              placeholder="New playlist name"
+              required={true}
+            />
+          )}
+
+        <div className="flex flex-row justify-end items-center gap-2 w-full mt-4">
+          <Button
+            type="submit"
+            onClick={() =>
+              (document.getElementById(modalId) as HTMLDialogElement)?.close()}
+          >
+            Cancel
+          </Button>
+          <Button>
+            Add
+          </Button>
+        </div>
+      </div>
+    </form>
   );
 };

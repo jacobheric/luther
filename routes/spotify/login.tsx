@@ -35,7 +35,7 @@ export default function SpotifyLogin(
         <input
           type="hidden"
           name="scope"
-          value="user-library-read,user-read-playback-state,user-modify-playback-state"
+          value="user-library-read,user-read-playback-state,user-modify-playback-state,playlist-modify-private,playlist-read-private"
         />
         <input
           type="hidden"
