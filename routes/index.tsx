@@ -5,8 +5,6 @@ import { searchSongs } from "@/lib/spotify/api.ts";
 import { define } from "@/lib/state.ts";
 import { type Track } from "@spotify/web-api-ts-sdk";
 import { page, PageProps } from "fresh";
-import { TEST_SONGS } from "@/lib/config.ts";
-import { testSongs } from "@/lib/test/data.ts";
 
 type SearchType = {
   prompt?: string;
