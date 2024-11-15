@@ -43,9 +43,6 @@ export const handler = define.handlers<
     return page({ prompt, songs, mode });
   },
   GET() {
-    if (TEST_SONGS) {
-      return page({ prompt: "tom petty deep cuts", songs: testSongs });
-    }
     return page();
   },
 });
