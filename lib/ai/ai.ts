@@ -35,15 +35,12 @@ export const getSongs = async (prompt: string, mode: string = "smart") => {
     : await openAICompletion(input);
 
   const content = completion.choices[0].message.content;
-  console.log("ai content response", content);
 
   const songs = content?.split("\n")
     ?.map((data) => {
       const [song, album, artist] = data.split(" -- ").map((s) => s.trim());
       return { song, album, artist };
     });
-
-  console.log("parsed ai songs", songs);
 
   return songs?.filter((song) => song.song && song.album && song.artist);
 };

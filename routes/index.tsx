@@ -27,21 +27,16 @@ export const handler = define.handlers<
     }
 
     const rawSongs = await getSongs(prompt, mode);
-    console.log("ai songs", rawSongs);
 
     if (!rawSongs || rawSongs.length === 0) {
-      console.log("returning ai songs not found");
       return page({ prompt, mode, error: NOT_FOUND });
     }
 
     const songs = await searchSongs(ctx.state.spotifyToken, rawSongs);
 
     if (!songs || songs.length === 0) {
-      console.log("returning spotify songs not found");
       return page({ prompt, mode, error: NOT_FOUND });
     }
-
-    console.log("returning spotify songs", songs?.length);
 
     return page({ prompt, songs, mode });
   },

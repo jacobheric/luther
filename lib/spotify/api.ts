@@ -18,7 +18,7 @@ export const searchSong = async (
   }"`;
 
   const searchQuery =
-    `https://api.spotify.com/v1/search?q=${query}&market=US&type=track&limit=1`;
+    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`;
 
   const response = await fetch(
     searchQuery,
@@ -35,8 +35,6 @@ export const searchSong = async (
   }
 
   const result = await response.json();
-
-  console.log("spotify search result", result);
 
   const track = result?.tracks?.items[0];
   return track;
