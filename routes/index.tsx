@@ -5,6 +5,8 @@ import { searchSongs } from "@/lib/spotify/api.ts";
 import { define } from "@/lib/state.ts";
 import { type Track } from "@spotify/web-api-ts-sdk";
 import { page, PageProps } from "fresh";
+import { TEST_SONGS } from "@/lib/config.ts";
+import { testSongs } from "@/lib/test/data.ts";
 
 type SearchType = {
   prompt?: string;
@@ -41,6 +43,11 @@ export const handler = define.handlers<
     return page({ prompt, songs, mode });
   },
   GET() {
+    if (TEST_SONGS) {
+      return page(
+        { prompt: "tom petty deep cuts", songs: testSongs } as SearchType,
+      );
+    }
     return page();
   },
 });

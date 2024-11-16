@@ -30,14 +30,16 @@ export const Devices = (
   }, []);
 
   return (
-    <div className="flex flex-row justify-start items-center gap-2">
-      <span>Devices:</span>
+    <div className="flex flex-row justify-between md:justify-start items-center w-full">
+      <div className="border border-r-0 rounded p-3 rounded-r-none text-gray-400">
+        Devices
+      </div>
 
       <select
         name="device"
         id="device"
         disabled={!devicesLoaded || devices?.length === 0}
-        className="min-w-[180px]"
+        className="w-full rounded-l-none"
       >
         {devices?.length === 0 && <option value="">None Found</option>}
         {devices.map(({ id, name }: Device) => (
@@ -45,24 +47,29 @@ export const Devices = (
         ))}
       </select>
 
-      <Tooltip tooltip="Reload devices" className="top-6 -translate-x-1/2">
+      <Tooltip
+        tooltip="Reload devices"
+        className="top-6 right-2"
+        tooltipClassName="ml-2"
+      >
         <Reload
-          className={`cursor-pointer w-5 h-5 ${loading && "animate-spin"}`}
+          className={`cursor-pointer w-6 h-6 ${loading && "animate-spin"}`}
           onClick={() => {
             setLoading(true);
             getDevices();
           }}
         />
       </Tooltip>
-      {devices?.length === 0 &&
-        (
-          <Tooltip
-            tooltip="Spotify must be open to be found."
-            className="top-6 -translate-x-1/2"
-          >
-            <InfoCircle className="w-5 h-5" />
-          </Tooltip>
-        )}
+
+      <Tooltip
+        tooltip="Spotify must be open to be found."
+        className="top-6 right-2"
+        tooltipClassName={`ml-2  ${
+          devicesLoaded && devices?.length === 0 ? "block" : "hidden"
+        }`}
+      >
+        <InfoCircle className="w-6 h-6 " />
+      </Tooltip>
     </div>
   );
 };

@@ -26,7 +26,7 @@ export const getSpotifyToken = (ctx: FreshContext) => {
   const rawToken = getCookies(ctx.req.headers).spotifyToken;
 
   if (!rawToken) {
-    console.warn("no spotify token cookie, redirecting to spotify login");
+    console.warn("no spotify token cookie");
     return null;
   }
 
@@ -42,40 +42,51 @@ export const refreshSpotifyToken = async (
   token: SpotifyToken | null,
 ) => {
   if (!token) {
+    console.error(
+      "no token, aborting refresh",
+    );
     return null;
   }
 
-  if (Date.now() >= token.expires_at) {
-    const body = new URLSearchParams();
-    body.append("grant_type", "refresh_token");
-    body.append("refresh_token", token.refresh_token);
-
-    const response = await fetch(SPOTIFY_TOKEN_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${SPOTIFY_AUTH}`,
-      },
-      body,
-    });
-
-    if (!response.ok) {
-      console.error(
-        "error refreshing spotify token, redirecting to spotify login",
-        response,
-      );
-      return null;
-    }
-
-    const refreshedToken = await response.json();
-
-    return refreshedToken
-      ? {
-        ...refreshedToken,
-        expires_at: Date.now() + (refreshedToken.expires_in * 1000),
-      }
-      : null;
+  if (Date.now() <= token.expires_at) {
+    return token;
   }
 
-  return token;
+  if (!token.refresh_token) {
+    console.error(
+      "no refresh token on access token, aborting refresh",
+    );
+    return null;
+  }
+
+  const body = new URLSearchParams();
+  body.append("grant_type", "refresh_token");
+  body.append("refresh_token", token.refresh_token);
+
+  const response = await fetch(SPOTIFY_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${SPOTIFY_AUTH}`,
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    console.error(
+      "error refreshing spotify token",
+      response,
+    );
+    return null;
+  }
+
+  const refreshedToken = await response.json();
+
+  return refreshedToken
+    ? {
+      ...refreshedToken,
+      expires_at: Date.now() + (refreshedToken.expires_in * 1000),
+      refresh_token: token.refresh_token,
+    }
+    : null;
 };

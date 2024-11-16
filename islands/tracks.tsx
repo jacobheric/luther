@@ -55,14 +55,14 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   return (
     <form ref={formRef} onSubmit={submit}>
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between items-center w-full gap-2 flex-wrap">
+        <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full gap-2 flex-wrap md:flex-nowrap">
           <Devices
             tracks={selected.length > 0}
             devices={devices}
             setDevices={setDevices}
           />
           {selected.length > 0 && (
-            <div className="flex flex-row justify-end items-center gap-2">
+            <div className="flex flex-row justify-items-stretch md:justify-end items-center gap-2 w-full">
               <Button
                 onClick={(e) => {
                   e.preventDefault();
@@ -74,11 +74,17 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                 submitting={submitting === "playlist"}
                 success={success === "playlist"}
                 error={error === "playlist"}
+                className="whitespace-nowrap w-1/3 md:w-fit"
               >
                 + Playlist
               </Button>
+
               <input ref={playListIdRef} type="hidden" name="playlistId" />
-              <input ref={playListNameRef} type="hidden" name="playlistName" />
+              <input
+                ref={playListNameRef}
+                type="hidden"
+                name="playlistName"
+              />
               <Modal id="add-to-playlist" title="Add to Playlist">
                 <PlaylistModal
                   modalId="add-to-playlist"
@@ -97,6 +103,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
 
               <Tooltip
                 className="top-14 right-2"
+                tooltipClassName="w-1/3 md:w-fit"
                 tooltip={!ready() ? "No devices found" : undefined}
               >
                 <Button
@@ -106,12 +113,15 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                   submitting={submitting === "queue"}
                   success={success === "queue"}
                   error={error === "queue"}
+                  className="whitespace-nowrap w-full md:w-fit"
                 >
                   + Queue
                 </Button>
               </Tooltip>
+
               <Tooltip
                 className="top-14 right-2"
+                tooltipClassName="w-1/3 md:w-fit"
                 tooltip={!ready() ? "No devices found" : undefined}
               >
                 <Button
@@ -121,6 +131,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                   submitting={submitting === "play"}
                   success={success === "play"}
                   error={error === "play"}
+                  className="whitespace-nowrap w-full md:w-fit"
                 >
                   Play
                 </Button>
