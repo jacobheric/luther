@@ -16,7 +16,8 @@ export const handler = define.handlers({
 
     if (!refreshToken || !token || !password) {
       return page({
-        error: "A valid invite token and password are required.",
+        error:
+          "A valid invite token and password are required. They only work once. Maybe try another sign up.",
       });
     }
 
@@ -29,7 +30,8 @@ export const handler = define.handlers({
 
     if (sessionError) {
       return page({
-        error: "Invite token is invalid. Maybe try another sign up.",
+        error:
+          "Invite token is invalid. They only work once. Maybe try another sign up.",
       });
     }
 

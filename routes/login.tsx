@@ -54,10 +54,7 @@ export default function Login(
             name="password"
             required
           />
-          <button
-            className={` p-3 rounded `}
-            type="submit"
-          >
+          <button type="submit">
             Login
           </button>
           <div>

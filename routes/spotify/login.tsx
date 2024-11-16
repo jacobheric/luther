@@ -42,12 +42,16 @@ export default function SpotifyLogin(
           name="redirect_uri"
           value={`${origin}/api/spotify/access-token`}
         />
-        <button
-          className="border border-gray-200 p-3 rounded"
-          type="submit"
-        >
-          Authorize Luther on Spotify
-        </button>
+        <div className="prose dark:prose-invert mb-10">
+          Luther needs permission to do a few things for you on Spotify. After
+          he helps you find the music you want, he can create playlists, queue
+          music and play music.
+        </div>
+        <div className="flex justify-center">
+          <button type="submit">
+            Authorize Luther on Spotify
+          </button>
+        </div>
       </form>
     </div>
   );

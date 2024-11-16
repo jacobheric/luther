@@ -20,9 +20,13 @@ export default function Password(
   }, [success]);
 
   return (
-    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 prose">
-      {error && <p class="text-red-500">{error}</p>}
-      {success && <p>Password set successfully! Redirecting to login...</p>}
+    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 ">
+      <div className="prose dark:prose-invert">
+        Set your password to get started. Next you'll use that and the email you
+        signed up with to login.
+        {error && <p class="text-red-500">{error}</p>}
+        {success && <p>Password set successfully! Redirecting to login...</p>}
+      </div>
 
       <form method="post">
         <div class="flex flex-col gap-4">
@@ -41,15 +45,11 @@ export default function Password(
           />
 
           <input
-            className="border border-gray-200 p-3 rounded w-full"
             type="password"
             name="password"
             required
           />
-          <button
-            className={`border border-gray-200 bg-gray-100 p-3 rounded `}
-            type="submit"
-          >
+          <button type="submit">
             Set Password
           </button>
           <div className="flex flex-row justify-start items-center gap-2 tracking-wide underline-offset-4">
