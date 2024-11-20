@@ -50,6 +50,7 @@ export const handler = define.handlers({
     });
 
     if (error) {
+      console.error("failed to send invitation", error);
       return page({
         error: new Error("Failed to send invitation, please try again later."),
       });

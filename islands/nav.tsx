@@ -69,11 +69,20 @@ export const Nav = (
                   Signup
                 </a>
               )}
+            {pathname === "/" &&
+              (
+                <a
+                  href="/logout"
+                  class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
+                >
+                  Logout
+                </a>
+              )}
             <a
-              href="/logout"
+              href="/help"
               class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
             >
-              Logout
+              Feedback
             </a>
           </div>
         )}

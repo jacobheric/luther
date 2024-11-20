@@ -12,6 +12,10 @@ input {
   @apply border border-gray-200 dark:bg-gray-900 p-3 rounded w-full;
 }
 
+textarea {
+  @apply border border-gray-200 dark:bg-gray-900 p-3 rounded w-full;
+}
+
 select {
   @apply border border-gray-200 dark:bg-gray-900 bg-white p-3 rounded w-full
     appearance-none pr-10 text-gray-900 dark:text-white;

@@ -24,6 +24,7 @@ export const handler = define.handlers({
     });
 
     if (error) {
+      console.error("failed to login", error);
       return page({
         error,
       });
