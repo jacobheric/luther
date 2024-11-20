@@ -8,7 +8,7 @@ const getInput = (prompt: string, mode: string) => ({
     : mode === "fast"
     ? "gpt-4o-mini"
     : "grok-beta",
-  temperature: 1,
+  temperature: .8,
   messages: [{
     role: "system" as const,
     content: "You are a helpful assistant named Luther that is a music expert.",
