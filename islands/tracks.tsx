@@ -1,4 +1,5 @@
 import { Button } from "@/islands/button.tsx";
+import { Controls } from "@/islands/controls.tsx";
 import { Devices } from "@/islands/devices.tsx";
 import { Modal } from "@/islands/modal.tsx";
 import { PlaylistModal } from "@/islands/playlist.tsx";
@@ -11,22 +12,19 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
   const playListNameRef = useRef<HTMLInputElement>(null);
   const playListIdRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const submitTypeRef = useRef<HTMLInputElement>(null);
+  const singleTrackRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<Track[]>(tracks || []);
   const [devices, setDevices] = useState<Device[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [submitType, setSubmitType] = useState<null | string>("play");
 
   const ready = () => devices.length && !submitting;
 
-  const submit = async (e: FormEvent<HTMLFormElement>) => {
+  const api = async (formData: FormData) => {
+    const submitType = submitTypeRef.current!.value;
     setSubmitting(submitType);
-    e.preventDefault();
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-
     const response = submitType === "queue"
       ? await fetch("/api/spotify/queue", {
         method: "POST",
@@ -50,10 +48,33 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
     await response.text();
     setSubmitting(null);
     setSuccess(submitType);
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const single = formData.get("singleTrackURI");
+
+    if (single) {
+      formData.delete("trackURI");
+      formData.set("trackURI", single);
+    }
+    await api(formData);
   };
 
   return (
     <form ref={formRef} onSubmit={submit}>
+      <input
+        ref={submitTypeRef}
+        type="hidden"
+        name="submitType"
+        id="submitType"
+        value="play"
+      />
+      <input ref={singleTrackRef} type="hidden" name="singleTrackURI" />
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
         <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full gap-2 flex-wrap md:flex-nowrap">
           <Devices
@@ -66,7 +87,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
               <Button
                 onClick={(e) => {
                   e.preventDefault();
-                  setSubmitType("playlist");
+                  submitTypeRef.current!.value = "playlist";
                   (document.getElementById(
                     "add-to-playlist",
                   ) as HTMLDialogElement)?.showModal();
@@ -109,7 +130,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                 <Button
                   type="submit"
                   disabled={!ready()}
-                  onClick={() => setSubmitType("queue")}
+                  onClick={() => submitTypeRef.current!.value = "queue"}
                   submitting={submitting === "queue"}
                   success={success === "queue"}
                   error={error === "queue"}
@@ -127,7 +148,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                 <Button
                   type="submit"
                   disabled={!ready()}
-                  onClick={() => setSubmitType("play")}
+                  onClick={() => submitTypeRef.current!.value = "play"}
                   submitting={submitting === "play"}
                   success={success === "play"}
                   error={error === "play"}
@@ -146,15 +167,16 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
                 i !== selected.length - 1 && "border-b"
               } border-gray-200 w-full mb-2 pb-2`}
             >
-              <button
-                className="hover:border-red-500 hover:bg-red-100 hover:text-red-500 h-8 w-8 flex items-center justify-center"
-                onClick={(e: MouseEvent) => {
-                  e.preventDefault();
-                  setSelected(selected.filter((_, index) => i !== index));
-                }}
-              >
-                X
-              </button>
+              <div class="flex flex-col gap-1">
+                <Controls
+                  remove={() =>
+                    setSelected(selected.filter((_, index) => i !== index))}
+                  form={formRef.current!}
+                  submitType={submitTypeRef.current!}
+                  singleTrack={singleTrackRef.current!}
+                  trackURI={song.uri}
+                />
+              </div>
               <div>
                 <div className="w-[65px] h-[65px] flex items-center justify-center">
                   <img
