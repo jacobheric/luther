@@ -25,6 +25,5 @@ export const CLOUDFLARE_TURNSTILE_SECRET_KEY = Deno.env.get(
   "CLOUDFLARE_TURNSTILE_SECRET_KEY",
 );
 
-export const INVITE_EMAIL_ADDRESS = Deno.env.get("INVITE_EMAIL_ADDRESS");
-export const FEEDBACK_EMAIL_ADDRESS = Deno.env.get("FEEDBACK_EMAIL_ADDRESS");
+export const ME_EMAIL = Deno.env.get("ME_EMAIL");
 export const TEST_SONGS = Deno.env.get("TEST_SONGS") === "true";

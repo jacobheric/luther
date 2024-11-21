@@ -1,7 +1,7 @@
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
 import { Resend } from "resend";
-import { FEEDBACK_EMAIL_ADDRESS, RESEND_API_KEY } from "@/lib/config.ts";
+import { ME_EMAIL, RESEND_API_KEY } from "@/lib/config.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -18,7 +18,7 @@ export const handler = define.handlers({
 
     const { error } = await resend.emails.send({
       from: "Listen to Luther <luther@listentoluther.com>",
-      to: [FEEDBACK_EMAIL_ADDRESS!],
+      to: [ME_EMAIL!],
       subject: "Feedback",
       html: feedback,
     });

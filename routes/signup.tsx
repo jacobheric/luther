@@ -1,6 +1,6 @@
 import {
   CLOUDFLARE_TURNSTILE_SITE_KEY,
-  INVITE_EMAIL_ADDRESS,
+  ME_EMAIL,
   RESEND_API_KEY,
 } from "@/lib/config.ts";
 import { define } from "@/lib/state.ts";
@@ -44,7 +44,7 @@ export const handler = define.handlers({
 
     const { error } = await resend.emails.send({
       from: "Listen to Luther <luther@listentoluther.com>",
-      to: [INVITE_EMAIL_ADDRESS!],
+      to: [ME_EMAIL!],
       subject: "Invitation Request",
       html: `${email} wants to join Listen to Luther`,
     });
