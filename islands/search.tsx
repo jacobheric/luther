@@ -5,6 +5,15 @@ import { type FormEvent } from "preact/compat";
 
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
+const parseSong = (song: string) => {
+  try {
+    return JSON.parse(song);
+  } catch (e) {
+    console.error("error parsing song", song, e);
+    return null;
+  }
+};
+
 export const Search = ({ test }: { test?: boolean }) => {
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,7 +46,10 @@ export const Search = ({ test }: { test?: boolean }) => {
       if (done) {
         break;
       }
-      SONGS.value = [...SONGS.value, ...[JSON.parse(value)]];
+      const parsed = parseSong(value);
+      if (parsed) {
+        SONGS.value = [...SONGS.value, ...[parsed]];
+      }
     }
 
     setSubmitting(false);
