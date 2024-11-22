@@ -9,10 +9,31 @@ import { SpotifyToken } from "./token.ts";
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
+export type TrackLite = Pick<Track, "name" | "uri"> & {
+  album: Pick<Track["album"], "name" | "images">;
+  artists: { name: string }[];
+};
+
+const pareTrack = (track: Track): TrackLite => {
+  const {
+    name,
+    album: { name: albumName, images },
+    uri,
+    artists,
+  } = track;
+
+  return {
+    name,
+    album: { name: albumName, images },
+    uri,
+    artists: [{ name: artists[0]?.name }],
+  };
+};
+
 export const searchSong = async (
   token: SpotifyToken,
   { song, artist }: { song: string; album: string; artist: string },
-): Promise<Track | null> => {
+): Promise<TrackLite | null> => {
   if (!song || !artist) {
     return null;
   }
@@ -38,7 +59,7 @@ export const searchSong = async (
   const result = await response.json();
 
   const track = result?.tracks?.items[0];
-  return track;
+  return track ? pareTrack(track) : null;
 };
 
 export const getDevices = async (token: SpotifyToken): Promise<Device[]> => {

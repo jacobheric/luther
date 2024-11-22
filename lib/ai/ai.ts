@@ -81,12 +81,16 @@ export const streamSongs = async ({
 
         if (line) {
           const [song, album, artist] = line.split(" -- ").map((s) => s.trim());
-          const aiSong = await searchSong(appToken, { song, album, artist });
+          const spotifySong = await searchSong(appToken, {
+            song,
+            album,
+            artist,
+          });
 
           //
           // send found songs to the client via SSE
-          aiSong && controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(aiSong)),
+          spotifySong && controller.enqueue(
+            new TextEncoder().encode(JSON.stringify(spotifySong)),
           );
         }
       }
