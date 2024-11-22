@@ -90,3 +90,24 @@ export const refreshSpotifyToken = async (
     }
     : null;
 };
+
+export const getAppToken = async () => {
+  const body = new URLSearchParams();
+  body.append("grant_type", "client_credentials");
+
+  //
+  // Spotify search using user tokens is SUPER sketchy
+  // (as in does not work at all for some users),
+  // so use our client credentials token here.
+  // could present some problems for our international users
+  const appTokenResponse = await fetch(SPOTIFY_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${SPOTIFY_AUTH}`,
+    },
+    body,
+  });
+
+  return await appTokenResponse.json();
+};

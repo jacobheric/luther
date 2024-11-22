@@ -1,51 +1,21 @@
 import { Search } from "@/islands/search.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
-import { getSongs } from "@/lib/ai/ai.ts";
-import { searchSongs } from "@/lib/spotify/api.ts";
-import { define } from "@/lib/state.ts";
-import { type Track } from "@spotify/web-api-ts-sdk";
-import { page, PageProps } from "fresh";
-import { TEST_SONGS } from "@/lib/config.ts";
-import { testSongs } from "@/lib/test/data.ts";
+import { TEST_MODE } from "@/lib/config.ts";
 
-type SearchType = {
-  prompt?: string;
-  songs?: Track[];
-  error?: string;
-  mode?: string;
+import { define } from "@/lib/state.ts";
+import { page, PageProps } from "fresh";
+
+type IndexType = {
+  TEST_MODE?: boolean;
 };
-const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
 export const handler = define.handlers<
-  SearchType | undefined
+  IndexType | undefined
 >({
-  async POST(ctx) {
-    const form = await ctx.req.formData();
-    const prompt = form.get("prompt")?.toString();
-    const mode = form.get("mode")?.toString();
-
-    if (!prompt) {
-      return page({ prompt, songs: [] });
-    }
-
-    const rawSongs = await getSongs(prompt, mode);
-
-    if (!rawSongs || rawSongs.length === 0) {
-      return page({ prompt, mode, error: NOT_FOUND });
-    }
-
-    const songs = await searchSongs(rawSongs);
-
-    if (!songs || songs.length === 0) {
-      return page({ prompt, mode, error: NOT_FOUND });
-    }
-
-    return page({ prompt, songs, mode });
-  },
   GET() {
-    if (TEST_SONGS) {
+    if (TEST_MODE) {
       return page(
-        { prompt: "tom petty deep cuts", songs: testSongs } as SearchType,
+        { TEST_MODE: true } as IndexType,
       );
     }
     return page();
@@ -53,20 +23,12 @@ export const handler = define.handlers<
 });
 
 const Index = (
-  { data }: PageProps<SearchType | undefined>,
+  { data }: PageProps<IndexType>,
 ) => {
   return (
     <div className="flex flex-col w-full">
-      <form method="post" id="promptForm">
-        <Search prompt={data?.prompt} mode={data?.mode} />
-      </form>
-
-      {data?.error && (
-        <div class="prose dark:prose-invert my-6">
-          {data.error}
-        </div>
-      )}
-      <Tracks tracks={data?.songs} />
+      <Search test={data?.TEST_MODE} />
+      <Tracks test={data?.TEST_MODE} />
     </div>
   );
 };

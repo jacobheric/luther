@@ -1,7 +1,5 @@
 import { FreshContext } from "fresh";
 
-import "@std/dotenv/load";
-
 import { PRODUCTION } from "@/lib/config.ts";
 import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
 import { createSupabaseClient } from "@/lib/supabase.ts";

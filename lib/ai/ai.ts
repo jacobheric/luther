@@ -1,14 +1,33 @@
-import "@std/dotenv/load";
-import { completion as openAICompletion } from "@/lib/ai/openai.ts";
-import { completion as grokCompletion } from "@/lib/ai/grok.ts";
+import { streamCompletion } from "@/lib/ai/openai.ts";
+import { streamCompletion as grokStreamCompletion } from "@/lib/ai/grok.ts";
+import type { Stream } from "openai/streaming";
+import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 
-const getInput = (prompt: string, mode: string) => ({
-  model: mode === "smart"
-    ? "chatgpt-4o-latest"
-    : mode === "fast"
-    ? "gpt-4o-mini"
-    : "grok-beta",
-  temperature: .8,
+import { getAppToken } from "@/lib/spotify/token.ts";
+import { searchSong } from "@/lib/spotify/api.ts";
+
+export type Mode = "smart" | "fast" | "recent";
+export const TEMP = 1;
+export const MODE: Mode = "smart";
+
+export const models = {
+  smart: "chatgpt-4o-latest",
+  fast: "gpt-4o-mini",
+  recent: "grok-beta",
+};
+
+//
+// Using unstructured output to save a few milliseconds.
+// TODO: consider switching to structured json output
+export const getInput = (
+  prompt: string,
+  mode: Mode = MODE,
+  temperature: number = TEMP,
+  stream: boolean = true,
+) => ({
+  model: models[mode],
+  stream,
+  temperature,
   messages: [{
     role: "system" as const,
     content: "You are a helpful assistant named Luther that is a music expert.",
@@ -16,31 +35,73 @@ const getInput = (prompt: string, mode: string) => ({
     role: "user" as const,
     content:
       `List at least 20 songs based on the following prompt, unless the prompt is for a specifc thing. 
-      Ensure the song and album names are accurate and likely to be found on Spotify. 
+    Ensure the song and album names are accurate and likely to be found on Spotify. 
 
-      Format the response strictly as "Song Name -- Album Name -- Artist Name" 
-      without any additional information or enumeration. 
+    Format the response strictly as "Song Name -- Album Name -- Artist Name" 
+    without any additional informationm, enumeration or quotes. 
 
-      Prompt: ### 
-      ${prompt}
-      ###`,
+    Prompt: ### 
+    ${prompt}
+    ###`,
   }],
 });
 
-export const getSongs = async (prompt: string, mode: string = "smart") => {
-  const input = getInput(prompt, mode);
+export const streamSongs = async ({
+  prompt,
+  mode = MODE,
+  temp = TEMP,
+  controller,
+}: {
+  prompt: string;
+  mode?: Mode;
+  temp?: number;
+  controller: ReadableStreamDefaultController<Uint8Array>;
+}) => {
+  const appToken = await getAppToken();
+  const input = getInput(prompt, mode, temp);
 
-  const completion = mode === "recent"
-    ? await grokCompletion(input)
-    : await openAICompletion(input);
+  const stream = mode === "recent"
+    ? await grokStreamCompletion(input)
+    : await streamCompletion(input);
 
-  const content = completion.choices[0].message.content;
+  let buffer = "";
 
-  const songs = content?.split("\n")
-    ?.map((data) => {
-      const [song, album, artist] = data.split(" -- ").map((s) => s.trim());
-      return { song, album, artist };
-    });
+  for await (const chunk of stream as Stream<ChatCompletionChunk>) {
+    const content = chunk.choices[0]?.delta?.content || "";
 
-  return songs?.filter((song) => song.song && song.album && song.artist);
+    if (content) {
+      buffer += content;
+      let newlineIndex;
+
+      //
+      // reconstitute songs from stream chunks
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+
+        if (line) {
+          const [song, album, artist] = line.split(" -- ").map((s) => s.trim());
+          const aiSong = await searchSong(appToken, { song, album, artist });
+
+          //
+          // send found songs to the client via SSE
+          aiSong && controller.enqueue(
+            new TextEncoder().encode(JSON.stringify(aiSong)),
+          );
+        }
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    const [song, album, artist] = buffer.split(" -- ").map((s) => s.trim());
+
+    if (song && album && artist) {
+      const aiSong = await searchSong(appToken, { song, album, artist });
+      controller.enqueue(
+        new TextEncoder().encode(JSON.stringify(aiSong)),
+      );
+    }
+  }
+  controller.close();
 };

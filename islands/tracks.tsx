@@ -7,20 +7,25 @@ import Tooltip from "@/islands/tooltip.tsx";
 import { type Device, Image, type Track } from "@spotify/web-api-ts-sdk";
 import { type FormEvent } from "preact/compat";
 import { useRef, useState } from "preact/hooks";
+import { ERROR, SONGS } from "@/lib/signals/songs.ts";
+import { testSongs } from "@/lib/test/data.ts";
 
-export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
+export const Tracks = ({ test }: { test?: boolean }) => {
   const playListNameRef = useRef<HTMLInputElement>(null);
   const playListIdRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const submitTypeRef = useRef<HTMLInputElement>(null);
   const singleTrackRef = useRef<HTMLInputElement>(null);
-  const [selected, setSelected] = useState<Track[]>(tracks || []);
   const [devices, setDevices] = useState<Device[]>([]);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const ready = () => devices.length && !submitting;
+
+  if (test) {
+    SONGS.value = testSongs as Track[];
+  }
 
   const api = async (formData: FormData) => {
     const submitType = submitTypeRef.current!.value;
@@ -46,6 +51,7 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
     }
 
     await response.text();
+
     setSubmitting(null);
     setSuccess(submitType);
     setTimeout(() => setSuccess(null), 3000);
@@ -78,11 +84,11 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
       <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
         <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full gap-2 flex-wrap md:flex-nowrap">
           <Devices
-            tracks={selected.length > 0}
+            tracks={SONGS.value.length > 0}
             devices={devices}
             setDevices={setDevices}
           />
-          {selected.length > 0 && (
+          {SONGS.value.length > 0 && (
             <div className="flex flex-row justify-items-stretch md:justify-end items-center gap-2 w-full">
               <Button
                 onClick={(e) => {
@@ -160,17 +166,22 @@ export const Tracks = ({ tracks }: { tracks?: Track[] }) => {
             </div>
           )}
         </div>
-        {selected?.map((song: Track, i: number) => (
+        {ERROR.value && (
+          <div class="prose dark:prose-invert">
+            {ERROR.value}
+          </div>
+        )}
+        {SONGS.value.map((song: Track, i: number) => (
           song && (
             <div
               className={`flex flex-row justify-start items-center gap-4 ${
-                i !== selected.length - 1 && "border-b"
+                i !== SONGS.value.length - 1 && "border-b"
               } border-gray-200 w-full mb-2 pb-2`}
             >
               <div class="flex flex-col gap-1">
                 <Controls
                   remove={() =>
-                    setSelected(selected.filter((_, index) => i !== index))}
+                    SONGS.value = SONGS.value.filter((_, index) => i !== index)}
                   form={formRef.current!}
                   submitType={submitTypeRef.current!}
                   singleTrack={singleTrackRef.current!}

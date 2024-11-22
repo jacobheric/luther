@@ -1,5 +1,4 @@
 import { assert } from "@std/assert";
-import "@std/dotenv/load";
 
 import {
   createServerClient,

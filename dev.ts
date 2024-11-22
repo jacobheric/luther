@@ -1,7 +1,5 @@
 #!/usr/bin/env -S deno run -A --watch=static/,routes/
 
-import "@std/dotenv/load";
-
 import { Builder } from "fresh/dev";
 import { tailwind } from "@fresh/plugin-tailwind";
 import { app } from "./main.ts";

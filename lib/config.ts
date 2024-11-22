@@ -1,4 +1,5 @@
 import { encodeBase64 } from "@std/encoding/base64";
+import "@std/dotenv/load";
 
 export const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 export const SPOTIFY_CLIENT_ID = Deno.env.get("SPOTIFY_CLIENT_ID");
@@ -26,4 +27,4 @@ export const CLOUDFLARE_TURNSTILE_SECRET_KEY = Deno.env.get(
 );
 
 export const ME_EMAIL = Deno.env.get("ME_EMAIL");
-export const TEST_SONGS = Deno.env.get("TEST_SONGS") === "true";
+export const TEST_MODE = Deno.env.get("TEST_MODE") === "true";

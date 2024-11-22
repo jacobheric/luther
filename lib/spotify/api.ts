@@ -1,4 +1,3 @@
-import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
 import { redirect } from "@/lib/utils.ts";
 import {
   type Device,
@@ -13,7 +12,10 @@ export const spotifyLoginRedirect = () => redirect("/spotify/login");
 export const searchSong = async (
   token: SpotifyToken,
   { song, artist }: { song: string; album: string; artist: string },
-): Promise<Track> => {
+): Promise<Track | null> => {
+  if (!song || !artist) {
+    return null;
+  }
   const query = encodeURIComponent(`track:${song} artist:${artist}`);
 
   const searchQuery =
@@ -194,32 +196,3 @@ export const addToPlaylist = async (
       }),
     },
   );
-
-export const searchSongs = async (
-  songs: { song: string; album: string; artist: string }[],
-): Promise<Track[]> => {
-  const body = new URLSearchParams();
-  body.append("grant_type", "client_credentials");
-
-  //
-  // Spotify search using user tokens is SUPER sketchy
-  // (as in does not work at all for some users),
-  // so use our client credentials token here.
-  // could present some problems for our international users
-  const appTokenResponse = await fetch(SPOTIFY_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `Basic ${SPOTIFY_AUTH}`,
-    },
-    body,
-  });
-
-  const appToken = await appTokenResponse.json();
-
-  const spotifyTracks = await Promise.all(
-    songs.map(async (song) => await searchSong(appToken, song)),
-  );
-
-  return spotifyTracks.filter((track: Track) => track);
-};

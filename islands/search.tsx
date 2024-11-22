@@ -1,53 +1,67 @@
-import { IS_BROWSER } from "fresh/runtime";
-import { useEffect, useState } from "preact/hooks";
+import { SONGS } from "@/lib/signals/songs.ts";
+import { useState } from "preact/hooks";
+import { ERROR } from "@/lib/signals/songs.ts";
+import { type FormEvent } from "preact/compat";
 
-const getStoredPrompt = () =>
-  IS_BROWSER ? globalThis.localStorage.getItem("storedPrompt") ?? "" : "";
+const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
-const storePrompt = (prompt: string) => {
-  if (IS_BROWSER) {
-    globalThis.localStorage.setItem("storedPrompt", prompt);
-  }
-};
-
-export const Search = (
-  { prompt }: { prompt?: string; mode?: string },
-) => {
+export const Search = ({ test }: { test?: boolean }) => {
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    setSubmitting(false);
-    document.getElementById("promptForm")?.addEventListener(
-      "submit",
-      () => {
-        storePrompt(
-          (document.getElementById("prompt") as HTMLInputElement)?.value || "",
-        );
-        setSubmitting(true);
-      },
-    );
-  }, []);
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    SONGS.value = [];
+    ERROR.value = null;
+    setSubmitting(true);
 
-  useEffect(() => {
-    if (prompt) {
-      globalThis.localStorage.removeItem("storedPrompt");
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const response = await fetch("/api/songs", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok || !response.body) {
+      console.error("error searching songs", await response.text());
+      ERROR.value = "There was an error searching songs. Please try again.";
+      setSubmitting(false);
+      return;
     }
-  }, [prompt]);
+
+    const reader = response.body.pipeThrough(new TextDecoderStream())
+      .getReader();
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        break;
+      }
+      SONGS.value = [...SONGS.value, ...[JSON.parse(value)]];
+    }
+
+    setSubmitting(false);
+
+    if (SONGS.value.length === 0) {
+      ERROR.value = NOT_FOUND;
+    }
+  };
 
   return (
-    <div className="mx-auto mt-12 flex flex-row justify-center items-start gap-2">
-      <div class="fled flex-col w-full">
-        <input
-          id="prompt"
-          type="text"
-          name="prompt"
-          placeholder="what do you want to listen to?"
-          required
-          defaultValue={prompt || getStoredPrompt()}
-          className="rounded-b-none"
-        />
-        {
-          /* <div className="flex flex-row justify-start items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
+    <form method="post" id="promptForm" onSubmit={submit}>
+      <div className="mx-auto mt-12 flex flex-row justify-center items-start gap-2">
+        <div class="fled flex-col w-full">
+          <input
+            id="prompt"
+            type="text"
+            name="prompt"
+            placeholder="what do you want to listen to?"
+            required
+            defaultValue={test ? "tom petty deep cuts" : ""}
+            className="rounded-b-none"
+          />
+          {
+            /* <div className="flex flex-row justify-start items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
           <div className="w-16">I prefer:</div>
           <select
             name="mode"
@@ -65,18 +79,19 @@ export const Search = (
             </option>
           </select>
         </div> */
-        }
-      </div>
-      <button
-        disabled={submitting}
-        type="submit"
-      >
-        <div
-          className={submitting ? "animate-spin" : ""}
-        >
-          Go
+          }
         </div>
-      </button>
-    </div>
+        <button
+          disabled={submitting}
+          type="submit"
+        >
+          <div
+            className={submitting ? "animate-spin" : ""}
+          >
+            Go
+          </div>
+        </button>
+      </div>
+    </form>
   );
 };
