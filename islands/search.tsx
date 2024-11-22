@@ -1,6 +1,7 @@
 import { ERROR, SONGS } from "@/lib/signals/songs.ts";
 import { type FormEvent } from "preact/compat";
 import { useState } from "preact/hooks";
+import { Logo } from "@/components/logo.tsx";
 
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
@@ -104,10 +105,13 @@ export const Search = ({ test }: { test?: boolean }) => {
           disabled={submitting}
           type="submit"
         >
-          <div
-            className={submitting ? "animate-spin" : ""}
-          >
-            Go
+          <div className="flex flex-row justify-center items-center w-[86px]">
+            <Logo
+              className={`w-4 fill-gray-900 dark:fill-white ${
+                submitting && "animate-spin"
+              }`}
+            />
+            utheriz{submitting ? "ing" : "e"}
           </div>
         </button>
       </div>
