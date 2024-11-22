@@ -12,6 +12,14 @@ type IndexType = {
 export const handler = define.handlers<
   IndexType | undefined
 >({
+  POST() {
+    if (TEST_MODE) {
+      return page(
+        { TEST_MODE: true } as IndexType,
+      );
+    }
+    return page();
+  },
   GET() {
     if (TEST_MODE) {
       return page(
