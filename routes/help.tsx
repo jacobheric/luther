@@ -44,6 +44,8 @@ export default function Help(
 
       <form method="post">
         <div class="flex flex-col gap-4">
+          Having a problem!? Want to see a feature? Give Luther a shout and
+          he'll do his best to get it sorted out!
           <label for="feedback">Feedback</label>
           <textarea
             id="feedback"
