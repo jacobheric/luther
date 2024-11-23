@@ -9,7 +9,7 @@ export default function Layout(ctx: PageProps) {
   return (
     <div className="flex flex-col min-h-screen justify-between">
       <div className="flex flex-col justify-start">
-        <div class="border-b p-4 flex flex-row justify-between">
+        <div class="border-b p-4 flex flex-row justify-between h-14">
           <div class="font-bold tracking-widest">
             <a
               class="no-underline flex flex-row justify-start items-center gap-1"
@@ -35,7 +35,7 @@ export default function Layout(ctx: PageProps) {
           </Partial>
         </div>
       </div>
-      <footer class="border-t flex flex-row items-center tracking-wide justify-center p-3 gap-1">
+      <footer class="border-t flex flex-row items-center tracking-wide justify-center gap-1 h-14">
         <div className="w-full inline text-right">
           <a
             href="https://github.com/jacobheric/luther"

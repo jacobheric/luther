@@ -23,6 +23,13 @@ export const Search = ({ test }: { test?: boolean }) => {
     ERROR.value = null;
     setSubmitting(true);
 
+    if (test) {
+      setTimeout(() => {
+        setSubmitting(false);
+      }, 3000);
+      return;
+    }
+
     const form = e.currentTarget;
     const formData = new FormData(form);
 
@@ -66,7 +73,9 @@ export const Search = ({ test }: { test?: boolean }) => {
 
   return (
     <form method="post" id="promptForm" onSubmit={submit}>
-      <div className="mx-auto mt-12 flex flex-row justify-center items-start gap-2">
+      <div
+        className={`mx-auto flex flex-row justify-center items-start gap-2 flex-wrap sm:flex-nowrap mt-6 sm:mt-12`}
+      >
         <div class="fled flex-col w-full">
           <input
             id="prompt"
@@ -104,11 +113,12 @@ export const Search = ({ test }: { test?: boolean }) => {
         <button
           disabled={submitting}
           type="submit"
+          className="w-full sm:w-auto flex flex-row justify-center items-center"
         >
-          <div className="flex flex-row justify-center items-center w-[86px]">
+          <div className="flex flex-row justify-center items-center w-[90px]">
             <Logo
               className={`w-4 fill-gray-900 dark:fill-white ${
-                submitting && "animate-spin"
+                submitting && "animate-spin mr-0.5"
               }`}
             />
             utheriz{submitting ? "ing" : "e"}
