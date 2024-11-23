@@ -16,11 +16,11 @@ export default function Layout(ctx: PageProps) {
               href="/"
             >
               <div className="flex flex-row justify-start items-center">
-                <Logo className="w-4 fill-black dark:fill-white" />isten
+                <Logo className="w-4 fill-black dark:fill-white mr-0.5" />isten
               </div>
               <div>to</div>
               <div className="flex flex-row justify-start items-center">
-                <Logo className="w-4 fill-black dark:fill-white" /> uther
+                <Logo className="w-4 fill-black dark:fill-white mr-0.5" />uther
               </div>
             </a>
           </div>
