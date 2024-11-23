@@ -117,8 +117,8 @@ export const Search = ({ test }: { test?: boolean }) => {
         >
           <div className="flex flex-row justify-center items-center w-[90px]">
             <Logo
-              className={`w-4 fill-gray-900 dark:fill-white mr-0.5 ${
-                submitting && "animate-spin"
+              className={`w-4 fill-gray-900 dark:fill-white mr-[1px] ${
+                submitting && "animate-spin mr-0.5"
               }`}
             />
             utheriz{submitting ? "ing" : "e"}
