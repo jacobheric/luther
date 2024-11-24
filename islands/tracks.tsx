@@ -4,11 +4,12 @@ import { Devices } from "@/islands/devices.tsx";
 import { Modal } from "@/islands/modal.tsx";
 import { PlaylistModal } from "@/islands/playlist.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
-import { type Device, Image, type Track } from "@spotify/web-api-ts-sdk";
+import { type Device, type Track } from "@spotify/web-api-ts-sdk";
 import { type FormEvent } from "preact/compat";
 import { useRef, useState } from "preact/hooks";
 import { ERROR, SONGS } from "@/lib/signals/songs.ts";
 import { testSongs } from "@/lib/test/data.ts";
+import { Cover } from "@/islands/cover.tsx";
 
 export const Tracks = ({ test }: { test?: boolean }) => {
   const playListNameRef = useRef<HTMLInputElement>(null);
@@ -190,11 +191,7 @@ export const Tracks = ({ test }: { test?: boolean }) => {
               </div>
               <div>
                 <div className="w-[65px] h-[65px] flex items-center justify-center">
-                  <img
-                    className="object-fill rounded"
-                    src={song.album.images.find((i: Image) => i.height === 300)
-                      ?.url}
-                  />
+                  <Cover images={song.album.images} />
                 </div>
               </div>
               <div>
