@@ -1,9 +1,39 @@
-import { ERROR, SONGS } from "@/lib/signals/songs.ts";
-import { type FormEvent } from "preact/compat";
-import { useState } from "preact/hooks";
 import { Logo } from "@/components/logo.tsx";
+import { ERROR, SONGS } from "@/lib/signals/songs.ts";
+import { type Track } from "@spotify/web-api-ts-sdk";
+import { IS_BROWSER } from "fresh/runtime";
+import { type FormEvent } from "preact/compat";
+import { useEffect, useState } from "preact/hooks";
 
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
+
+const getStoredPrompt = () =>
+  IS_BROWSER ? globalThis.localStorage.getItem("storedPrompt") ?? "" : "";
+
+const storePrompt = (prompt: string) => {
+  if (IS_BROWSER) {
+    globalThis.localStorage.setItem("storedPrompt", prompt);
+  }
+};
+
+const getStoredSongs = (): Track[] => {
+  if (!IS_BROWSER) {
+    return [];
+  }
+  const tracks = globalThis.localStorage.getItem("storedTracks");
+  if (tracks) {
+    return JSON.parse(tracks);
+  }
+  return [];
+};
+
+const setStoredSongs = (songs: Track[]) => {
+  if (!IS_BROWSER) {
+    return [];
+  }
+
+  globalThis.localStorage.setItem("storedTracks", JSON.stringify(songs));
+};
 
 const parseSong = (song: string) => {
   try {
@@ -16,6 +46,17 @@ const parseSong = (song: string) => {
 
 export const Search = ({ test }: { test?: boolean }) => {
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (SONGS.value.length) {
+      return;
+    }
+
+    const storedTracks = getStoredSongs();
+    if (storedTracks.length) {
+      SONGS.value = storedTracks;
+    }
+  }, []);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,6 +73,8 @@ export const Search = ({ test }: { test?: boolean }) => {
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+    const prompt = formData.get("prompt")?.toString();
+    prompt && storePrompt(prompt);
 
     const response = await fetch("/api/songs", {
       method: "POST",
@@ -57,6 +100,7 @@ export const Search = ({ test }: { test?: boolean }) => {
         const parsed = parseSong(value);
         if (parsed) {
           SONGS.value = [...SONGS.value, ...[parsed]];
+          setStoredSongs(SONGS.value);
         }
       }
     } catch (e) {
@@ -83,7 +127,7 @@ export const Search = ({ test }: { test?: boolean }) => {
             name="prompt"
             placeholder="what do you want to listen to?"
             required
-            defaultValue={test ? "tom petty deep cuts" : ""}
+            defaultValue={test ? "tom petty deep cuts" : getStoredPrompt()}
             className="rounded-b-none"
           />
           {

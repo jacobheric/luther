@@ -1,15 +1,15 @@
 import { Button } from "@/islands/button.tsx";
 import { Controls } from "@/islands/controls.tsx";
+import { Cover } from "@/islands/cover.tsx";
 import { Devices } from "@/islands/devices.tsx";
 import { Modal } from "@/islands/modal.tsx";
 import { PlaylistModal } from "@/islands/playlist.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
+import { ERROR, SONGS } from "@/lib/signals/songs.ts";
+import { testSongs } from "@/lib/test/data.ts";
 import { type Device, type Track } from "@spotify/web-api-ts-sdk";
 import { type FormEvent } from "preact/compat";
 import { useRef, useState } from "preact/hooks";
-import { ERROR, SONGS } from "@/lib/signals/songs.ts";
-import { testSongs } from "@/lib/test/data.ts";
-import { Cover } from "@/islands/cover.tsx";
 
 export const Tracks = ({ test }: { test?: boolean }) => {
   const playListNameRef = useRef<HTMLInputElement>(null);
