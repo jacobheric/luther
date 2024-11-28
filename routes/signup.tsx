@@ -1,5 +1,4 @@
 import {
-  CLOUDFLARE_TURNSTILE_SECRET_KEY,
   CLOUDFLARE_TURNSTILE_SITE_KEY,
   ME_EMAIL,
   RESEND_API_KEY,
@@ -15,33 +14,30 @@ export const handler = define.handlers({
     const form = await ctx.req.formData();
     const email = form.get("email")?.toString();
 
-    const token = form.get("cf-turnstile-response")?.toString();
-    const ip = ctx.req.headers.get("host");
-
     if (!email) {
       return page({
         error: new Error("You must supply an email and verify you are human."),
       });
     }
 
-    const formData = new FormData();
-    formData.append("secret", CLOUDFLARE_TURNSTILE_SECRET_KEY!);
-    formData.append("response", token ?? "");
-    formData.append("remoteip", ip ?? "");
+    // const formData = new FormData();
+    // formData.append("secret", CLOUDFLARE_TURNSTILE_SECRET_KEY!);
+    // formData.append("response", token ?? "");
+    // formData.append("remoteip", ip ?? "");
 
-    const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-    const result = await fetch(url, {
-      body: formData,
-      method: "POST",
-    });
+    // const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    // const result = await fetch(url, {
+    //   body: formData,
+    //   method: "POST",
+    // });
 
-    const outcome = await result.json();
-    if (!outcome.success) {
-      console.error("failed to verify turnstile", outcome);
-      return page({
-        error: new Error("This is for humans"),
-      });
-    }
+    // const outcome = await result.json();
+    // if (!outcome.success) {
+    //   console.error("failed to verify turnstile", outcome);
+    //   return page({
+    //     error: new Error("This is for humans"),
+    //   });
+    // }
 
     const resend = new Resend(RESEND_API_KEY);
 
@@ -103,11 +99,13 @@ export default function Login(
             Sign up
           </button>
 
-          <div
+          {
+            /* <div
             class="cf-turnstile"
             data-sitekey={data.siteKey}
             data-size="flexible"
-          />
+          /> */
+          }
         </div>
       </form>
     </div>
