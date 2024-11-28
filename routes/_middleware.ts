@@ -61,7 +61,6 @@ const authHandler = async (
   const supabase = createSupabaseClient(ctx.req, resp);
 
   const { data: sessionData } = await supabase.auth.getSession();
-  //  const { data: userData } = await supabase.auth.getUser();
 
   ctx.state.session = sessionData.session;
 
