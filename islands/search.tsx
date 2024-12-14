@@ -5,6 +5,8 @@ import { IS_BROWSER } from "fresh/runtime";
 import { type FormEvent } from "preact/compat";
 import { useEffect, useState } from "preact/hooks";
 
+import X from "tabler-icons/tsx/x.tsx";
+
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
 const getStoredPrompt = () =>
@@ -46,6 +48,7 @@ const parseSong = (song: string) => {
 
 export const Search = ({ test }: { test?: boolean }) => {
   const [submitting, setSubmitting] = useState(false);
+  const [prompt, setPrompt] = useState(getStoredPrompt());
 
   useEffect(() => {
     if (SONGS.value.length) {
@@ -120,22 +123,33 @@ export const Search = ({ test }: { test?: boolean }) => {
       <div
         className={`mx-auto flex flex-row justify-center items-start gap-2 flex-wrap sm:flex-nowrap mt-6 sm:mt-12`}
       >
-        <div class="fled flex-col w-full">
-          <input
-            id="prompt"
-            type="text"
-            name="prompt"
-            placeholder="what do you want to listen to?"
-            required
-            defaultValue={test ? "tom petty deep cuts" : getStoredPrompt()}
-            className="rounded-b-none"
-          />
+        <div class="flex flex-col w-full">
+          <div className="flex flex-row justify-start relative w-full">
+            <input
+              id="prompt"
+              type="text"
+              name="prompt"
+              placeholder="what do you want to listen to?"
+              required
+              value={prompt}
+              onInput={(e) => {
+                setPrompt((e.target as HTMLInputElement).value);
+              }}
+              className="rounded-b-none w-full"
+            />
+            {prompt && (
+              <X
+                className="w-4 fill-gray-900 dark:fill-white absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer bg-white dark:bg-gray-900 rounded-full"
+                onClick={() => setPrompt("")}
+              />
+            )}
+          </div>
           {
             /* <div className="flex flex-row justify-between items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
             <select
               name="mode"
               id="mode"
-              className="h-6 w-auto min-w-fit pr-6 py-0 px-2 text-xs text-gray-700"
+              className="h-6 w-auto min-w-fit pr-6 py-0 px-2 text-xs"
             >
               <option value="smart">
                 prefer smart
@@ -144,13 +158,6 @@ export const Search = ({ test }: { test?: boolean }) => {
                 prefer recent
               </option>
             </select>
-            {submitting && (
-              <div className="flex flex-row justify-start items-center animate-pulse">
-                <Logo className="w-4 fill-gray-900 dark:fill-white animate-spin" />
-                {" "}
-                utherizing...
-              </div>
-            )}
           </div> */
           }
         </div>
