@@ -6,6 +6,8 @@ import { type FormEvent } from "preact/compat";
 import { useEffect, useState } from "preact/hooks";
 
 import X from "tabler-icons/tsx/x.tsx";
+import Q from "tabler-icons/tsx/question-mark.tsx";
+import Tooltip from "@/islands/tooltip.tsx";
 
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
@@ -49,6 +51,7 @@ const parseSong = (song: string) => {
 export const Search = ({ test }: { test?: boolean }) => {
   const [submitting, setSubmitting] = useState(false);
   const [prompt, setPrompt] = useState(getStoredPrompt());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (SONGS.value.length) {
@@ -59,6 +62,7 @@ export const Search = ({ test }: { test?: boolean }) => {
     if (storedTracks.length) {
       SONGS.value = storedTracks;
     }
+    setLoading(false);
   }, []);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -135,14 +139,33 @@ export const Search = ({ test }: { test?: boolean }) => {
               onInput={(e) => {
                 setPrompt((e.target as HTMLInputElement).value);
               }}
-              className="rounded-b-none w-full"
+              className="w-full border-r-0 rounded-r-none"
             />
-            {prompt && (
-              <X
-                className="w-4 fill-gray-900 dark:fill-white absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer bg-white dark:bg-gray-900 rounded-full"
-                onClick={() => setPrompt("")}
-              />
-            )}
+            <div className="border border-gray-200 dark:bg-gray-900 py-3 px-2 rounded border-l-0 rounded-l-none text-gray-900 dark:text-white">
+              {loading ? null : prompt
+                ? (
+                  <X
+                    className="cursor-pointer w-5"
+                    onClick={() => setPrompt("")}
+                  />
+                )
+                : (
+                  <Tooltip
+                    tooltip={
+                      <div>
+                        things to try: <br />
+                        "Tom Petty deep cuts" <br />
+                        "sad songs by Lana Del Rey" <br />
+                        "indie summer 2010"
+                      </div>
+                    }
+                    className="top-6 right-2"
+                    tooltipClassName="p-0 m-0 block"
+                  >
+                    <Q className="cursor-pointer w-5" />
+                  </Tooltip>
+                )}
+            </div>
           </div>
           {
             /* <div className="flex flex-row justify-between items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
