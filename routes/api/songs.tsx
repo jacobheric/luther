@@ -1,6 +1,7 @@
 import { define } from "@/lib/state.ts";
 
 import { Mode, streamSongs } from "@/lib/ai/ai.ts";
+import { saveSearch } from "@/lib/db/history.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -16,6 +17,12 @@ export const handler = define.handlers({
       return new Response("mode must be smart, recent, or fast", {
         status: 400,
       });
+    }
+
+    //
+    // in prod save searches to db
+    if (ctx.state.session) {
+      saveSearch(ctx.state.session, prompt);
     }
 
     const body = new ReadableStream({

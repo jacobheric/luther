@@ -4,29 +4,43 @@ import { TEST_MODE } from "@/lib/config.ts";
 
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
+import { getSearchHistory } from "@/lib/db/history.ts";
+import { Session } from "@supabase/supabase-js";
+
+export type History = {
+  id: number;
+  search: string;
+  created_at: string;
+};
 
 type IndexType = {
-  TEST_MODE?: boolean;
+  testMode?: boolean;
+  history?: History[];
+};
+
+const history = async (test: boolean, session?: Session) => {
+  if (test || !session) {
+    return [];
+  }
+  return await getSearchHistory(session);
 };
 
 export const handler = define.handlers<
   IndexType | undefined
 >({
-  POST() {
-    if (TEST_MODE) {
-      return page(
-        { TEST_MODE: true } as IndexType,
-      );
-    }
-    return page();
+  async POST(ctx) {
+    return page({
+      testMode: TEST_MODE,
+      history: await history(TEST_MODE, ctx.state.session),
+    });
   },
-  GET() {
-    if (TEST_MODE) {
-      return page(
-        { TEST_MODE: true } as IndexType,
-      );
-    }
-    return page();
+  async GET(ctx) {
+    return page(
+      {
+        testMode: TEST_MODE,
+        history: await history(TEST_MODE, ctx.state.session),
+      },
+    );
   },
 });
 
@@ -35,8 +49,8 @@ const Index = (
 ) => {
   return (
     <div className="flex flex-col w-full">
-      <Search test={data?.TEST_MODE} />
-      <Tracks test={data?.TEST_MODE} />
+      <Search test={data?.testMode} history={data?.history} />
+      <Tracks test={data?.testMode} />
     </div>
   );
 };

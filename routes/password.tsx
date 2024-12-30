@@ -2,10 +2,8 @@ import { define } from "@/lib/state.ts";
 
 import { page, PageProps } from "fresh";
 
-import { SUPABASE_PUBLIC_KEY, SUPABASE_URL } from "@/lib/config.ts";
-import { createClient } from "@supabase/supabase-js";
-
 import Password from "@/islands/password.tsx";
+import { supabase } from "@/lib/db/supabase.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -20,8 +18,6 @@ export const handler = define.handlers({
           "A valid invite token and password are required. They only work once. Maybe try another sign up.",
       });
     }
-
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_PUBLIC_KEY!);
 
     const { error: sessionError } = await supabase.auth.setSession({
       access_token: token,

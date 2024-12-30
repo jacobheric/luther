@@ -4,7 +4,7 @@ import type { Stream } from "openai/streaming";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 
 import { getAppToken } from "@/lib/spotify/token.ts";
-import { searchSong } from "@/lib/spotify/api.ts";
+import { searchSong, TrackLite } from "@/lib/spotify/api.ts";
 
 export type Mode = "smart" | "fast" | "recent";
 export const TEMP = 1;
@@ -89,9 +89,7 @@ export const streamSongs = async ({
 
           //
           // send found songs to the client via SSE
-          spotifySong && controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(spotifySong)),
-          );
+          enqueue(controller, spotifySong);
         }
       }
     }
@@ -102,10 +100,31 @@ export const streamSongs = async ({
 
     if (song && album && artist) {
       const aiSong = await searchSong(appToken, { song, album, artist });
-      controller.enqueue(
-        new TextEncoder().encode(JSON.stringify(aiSong)),
-      );
+      enqueue(controller, aiSong);
     }
   }
-  controller.close();
+  close(controller);
+};
+
+const enqueue = (
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  song: TrackLite | null,
+) => {
+  try {
+    song && controller?.enqueue(
+      new TextEncoder().encode(JSON.stringify(song)),
+    );
+  } catch (e) {
+    console.error("error enqueuing song", e);
+  }
+};
+
+export const close = (
+  controller: ReadableStreamDefaultController<Uint8Array>,
+) => {
+  try {
+    controller?.close();
+  } catch (e) {
+    console.error("error closing controller", e);
+  }
 };

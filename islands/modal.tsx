@@ -37,7 +37,7 @@ export const Modal = (
     <dialog
       ref={dialogRef}
       id={id}
-      className="p-4 mx-auto mt-16 rounded w-full md:max-w-[500px] shadow-md"
+      className="p-4 mx-auto mt-16 rounded w-full md:max-w-[90%] xl:max-w-[1024px] shadow-md outline-none"
       onClick={(e) => {
         const dialog = e.target as HTMLDialogElement;
         if (dialog.tagName === "DIALOG") {

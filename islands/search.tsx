@@ -9,6 +9,12 @@ import X from "tabler-icons/tsx/x.tsx";
 import Q from "tabler-icons/tsx/question-mark.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
 
+import { type History as HistoryType } from "@/routes/index.tsx";
+
+import { Modal } from "@/islands/modal.tsx";
+import { HistoryModal } from "@/islands/history.tsx";
+import IconClock from "tabler-icons/tsx/clock.tsx";
+
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
 
 const getStoredPrompt = () =>
@@ -48,13 +54,20 @@ const parseSong = (song: string) => {
   }
 };
 
-export const Search = ({ test }: { test?: boolean }) => {
+export const Search = (
+  { test, history }: { test?: boolean; history?: HistoryType[] },
+) => {
   const [submitting, setSubmitting] = useState(false);
-  const [prompt, setPrompt] = useState(getStoredPrompt());
-  const [loading, setLoading] = useState(true);
+  const [prompt, setPrompt] = useState(
+    (getStoredPrompt() || history?.[0]?.search) ?? "",
+  );
 
   useEffect(() => {
     if (SONGS.value.length) {
+      return;
+    }
+
+    if (prompt !== getStoredPrompt()) {
       return;
     }
 
@@ -62,7 +75,6 @@ export const Search = ({ test }: { test?: boolean }) => {
     if (storedTracks.length) {
       SONGS.value = storedTracks;
     }
-    setLoading(false);
   }, []);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -139,37 +151,12 @@ export const Search = ({ test }: { test?: boolean }) => {
               onInput={(e) => {
                 setPrompt((e.target as HTMLInputElement).value);
               }}
-              className="w-full border-r-0 rounded-r-none"
+              className="w-full"
             />
-            <div className="border border-gray-200 dark:bg-gray-900 py-3 px-2 rounded border-l-0 rounded-l-none text-gray-900 dark:text-white">
-              {loading ? null : prompt
-                ? (
-                  <X
-                    className="cursor-pointer w-5"
-                    onClick={() => setPrompt("")}
-                  />
-                )
-                : (
-                  <Tooltip
-                    tooltip={
-                      <div>
-                        things to try: <br />
-                        "Tom Petty deep cuts" <br />
-                        "sad songs by Lana Del Rey" <br />
-                        "indie summer 2010"
-                      </div>
-                    }
-                    className="top-6 right-2"
-                    tooltipClassName="p-0 m-0 block"
-                  >
-                    <Q className="cursor-pointer w-5" />
-                  </Tooltip>
-                )}
-            </div>
           </div>
-          {
-            /* <div className="flex flex-row justify-between items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded px-3 border-t-0 p-2 rounded-t-none">
-            <select
+          <div className="flex flex-row justify-end items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded border-t-0 p-2 rounded-t-none">
+            {
+              /* <select
               name="mode"
               id="mode"
               className="h-6 w-auto min-w-fit pr-6 py-0 px-2 text-xs"
@@ -180,9 +167,66 @@ export const Search = ({ test }: { test?: boolean }) => {
               <option value="recent">
                 prefer recent
               </option>
-            </select>
-          </div> */
-          }
+            </select> */
+            }
+            {history?.length && (
+              <IconClock
+                className="cursor-pointer w-5"
+                onClick={() => {
+                  (document.getElementById(
+                    "search-history",
+                  ) as HTMLDialogElement)?.showModal();
+                }}
+              />
+            )}
+            {prompt
+              ? (
+                <X
+                  className="cursor-pointer w-5"
+                  onClick={() => setPrompt("")}
+                />
+              )
+              : (
+                <Tooltip
+                  tooltip={
+                    <div>
+                      things to try: <br />
+                      "Tom Petty deep cuts" <br />
+                      "sad songs by Lana Del Rey" <br />
+                      "indie summer 2010"
+                    </div>
+                  }
+                  className="top-6 right-2"
+                  tooltipClassName="p-0 m-0 block"
+                >
+                  <Q className="cursor-pointer w-5" />
+                </Tooltip>
+              )}
+
+            <Modal id="search-history" title="Search History">
+              <HistoryModal
+                modalId="search-history"
+                search={(search) => {
+                  const prompt = search ?? "";
+                  setPrompt(prompt);
+                  (document.getElementById(
+                    "prompt",
+                  ) as HTMLInputElement).value = prompt;
+
+                  const form = document.getElementById(
+                    "promptForm",
+                  ) as HTMLFormElement;
+
+                  const syntheticEvent = {
+                    preventDefault: () => {},
+                    currentTarget: form,
+                  } as FormEvent<HTMLFormElement>;
+
+                  submit(syntheticEvent);
+                }}
+              />
+            </Modal>
+          </div>
         </div>
         <button
           disabled={submitting}
