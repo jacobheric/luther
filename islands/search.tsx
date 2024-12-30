@@ -169,16 +169,18 @@ export const Search = (
               </option>
             </select> */
             }
-            {history?.length && (
-              <IconClock
-                className="cursor-pointer w-5"
-                onClick={() => {
-                  (document.getElementById(
-                    "search-history",
-                  ) as HTMLDialogElement)?.showModal();
-                }}
-              />
-            )}
+            {history?.length
+              ? (
+                <IconClock
+                  className="cursor-pointer w-5"
+                  onClick={() => {
+                    (document.getElementById(
+                      "search-history",
+                    ) as HTMLDialogElement)?.showModal();
+                  }}
+                />
+              )
+              : null}
             {prompt
               ? (
                 <X
