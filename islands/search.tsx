@@ -151,7 +151,7 @@ export const Search = (
               onInput={(e) => {
                 setPrompt((e.target as HTMLInputElement).value);
               }}
-              className="w-full"
+              className="w-full rounded-br-none rounded-bl-none"
             />
           </div>
           <div className="flex flex-row justify-end items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded border-t-0 p-2 rounded-t-none">

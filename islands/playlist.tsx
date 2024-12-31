@@ -70,10 +70,11 @@ export const PlaylistModal = (
             type="submit"
             onClick={() =>
               (document.getElementById(modalId) as HTMLDialogElement)?.close()}
+            className="text-gray-900 dark:text-white"
           >
             Cancel
           </Button>
-          <Button>
+          <Button type="submit" className="text-gray-900 dark:text-white">
             Add
           </Button>
         </div>

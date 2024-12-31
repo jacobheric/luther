@@ -34,15 +34,15 @@ export const HistoryModal = (
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className="flex flex-col gap-2 w-full dark:text-white text-gray-900">
       {history.map((item) => (
-        <div className="flex flex-row justify-start items-center gap-1 pb-2">
+        <div className="flex flex-row justify-start items-center gap-2">
           <X
             className="cursor-pointer w-5"
             onClick={() => deleteSearchHistory(item.id)}
           />
           <div
-            className="flex flex-row justify-start items-center gap-1 cursor-pointer"
+            className="flex flex-row justify-start items-center gap-2 cursor-pointer"
             onClick={() => {
               search(item.search);
               (document.getElementById(modalId) as HTMLDialogElement)
@@ -50,7 +50,7 @@ export const HistoryModal = (
             }}
           >
             <Search className="w-5" />
-            <div>{item.search}</div>
+            {item.search}
           </div>
         </div>
       ))}
