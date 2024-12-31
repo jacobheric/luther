@@ -35,10 +35,14 @@ export const HistoryModal = (
 
   return (
     <div className="flex flex-col gap-2 w-full dark:text-white text-gray-900">
-      {history.map((item) => (
-        <div className="flex flex-row justify-start items-center gap-2">
+      {history.map((item, i) => (
+        <div
+          className={`flex flex-row justify-start items-center gap-2 ${
+            i === history.length - 1 ? "" : "border-b pb-2"
+          }`}
+        >
           <X
-            className="cursor-pointer w-5"
+            className="cursor-pointer w-5 shrink-0"
             onClick={() => deleteSearchHistory(item.id)}
           />
           <div
@@ -49,7 +53,7 @@ export const HistoryModal = (
                 ?.close();
             }}
           >
-            <Search className="w-5" />
+            <Search className="w-5 shrink-0" />
             {item.search}
           </div>
         </div>
