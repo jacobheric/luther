@@ -59,7 +59,7 @@ export const Search = (
 ) => {
   const [submitting, setSubmitting] = useState(false);
   const [prompt, setPrompt] = useState(
-    (getStoredPrompt() || history?.[0]?.search) ?? "",
+    getStoredPrompt(),
   );
 
   useEffect(() => {
@@ -141,7 +141,8 @@ export const Search = (
       >
         <div class="flex flex-col w-full">
           <div className="flex flex-row justify-start relative w-full">
-            <input
+            <textarea
+              rows={1}
               id="prompt"
               type="text"
               name="prompt"
@@ -149,85 +150,73 @@ export const Search = (
               required
               value={prompt}
               onInput={(e) => {
-                setPrompt((e.target as HTMLInputElement).value);
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "0";
+                target.style.height = target.scrollHeight + "px";
+                setPrompt(target.value);
               }}
-              className="w-full rounded-br-none rounded-bl-none"
+              className="w-full rounded-br-none rounded-bl-none overflow-hidden border-r-0 rounded-r-none resize-none"
             />
-          </div>
-          <div className="flex flex-row justify-end items-center gap-1 border border-gray-200 dark:bg-gray-900 rounded border-t-0 p-2 rounded-t-none">
-            {
-              /* <select
-              name="mode"
-              id="mode"
-              className="h-6 w-auto min-w-fit pr-6 py-0 px-2 text-xs"
-            >
-              <option value="smart">
-                prefer smart
-              </option>
-              <option value="recent">
-                prefer recent
-              </option>
-            </select> */
-            }
-            {history?.length
-              ? (
-                <IconClock
-                  className="cursor-pointer w-5"
-                  onClick={() => {
+            <div className="flex flex-row justify-end items-start border border-gray-200 dark:bg-gray-900 py-3 px-2 rounded border-l-0 rounded-l-none text-gray-900 dark:text-white gap-2">
+              {prompt
+                ? (
+                  <X
+                    className="cursor-pointer w-5"
+                    onClick={() => setPrompt("")}
+                  />
+                )
+                : (
+                  <Tooltip
+                    tooltip={
+                      <div>
+                        things to try: <br />
+                        "Tom Petty deep cuts" <br />
+                        "sad songs by Lana Del Rey" <br />
+                        "indie summer 2010"
+                      </div>
+                    }
+                    className="top-6 right-2"
+                    tooltipClassName="p-0 m-0 block"
+                  >
+                    <Q className="cursor-pointer w-5" />
+                  </Tooltip>
+                )}
+              {history?.length
+                ? (
+                  <IconClock
+                    className="cursor-pointer w-5"
+                    onClick={() => {
+                      (document.getElementById(
+                        "search-history",
+                      ) as HTMLDialogElement)?.showModal();
+                    }}
+                  />
+                )
+                : null}
+              <Modal id="search-history" title="Search History">
+                <HistoryModal
+                  modalId="search-history"
+                  search={(search) => {
+                    const prompt = search ?? "";
+                    setPrompt(prompt);
                     (document.getElementById(
-                      "search-history",
-                    ) as HTMLDialogElement)?.showModal();
+                      "prompt",
+                    ) as HTMLInputElement).value = prompt;
+
+                    const form = document.getElementById(
+                      "promptForm",
+                    ) as HTMLFormElement;
+
+                    const syntheticEvent = {
+                      preventDefault: () => {},
+                      currentTarget: form,
+                    } as FormEvent<HTMLFormElement>;
+
+                    submit(syntheticEvent);
                   }}
                 />
-              )
-              : null}
-            {prompt
-              ? (
-                <X
-                  className="cursor-pointer w-5"
-                  onClick={() => setPrompt("")}
-                />
-              )
-              : (
-                <Tooltip
-                  tooltip={
-                    <div>
-                      things to try: <br />
-                      "Tom Petty deep cuts" <br />
-                      "sad songs by Lana Del Rey" <br />
-                      "indie summer 2010"
-                    </div>
-                  }
-                  className="top-6 right-2"
-                  tooltipClassName="p-0 m-0 block"
-                >
-                  <Q className="cursor-pointer w-5" />
-                </Tooltip>
-              )}
-
-            <Modal id="search-history" title="Search History">
-              <HistoryModal
-                modalId="search-history"
-                search={(search) => {
-                  const prompt = search ?? "";
-                  setPrompt(prompt);
-                  (document.getElementById(
-                    "prompt",
-                  ) as HTMLInputElement).value = prompt;
-
-                  const form = document.getElementById(
-                    "promptForm",
-                  ) as HTMLFormElement;
-
-                  const syntheticEvent = {
-                    preventDefault: () => {},
-                    currentTarget: form,
-                  } as FormEvent<HTMLFormElement>;
-
-                  submit(syntheticEvent);
-                }}
-              />
-            </Modal>
+              </Modal>
+            </div>
           </div>
         </div>
         <button

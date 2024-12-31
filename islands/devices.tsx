@@ -31,8 +31,29 @@ export const Devices = (
 
   return (
     <div className="flex flex-row justify-between md:justify-start items-center w-full">
-      <div className="border border-r-0 rounded p-3 rounded-r-none text-gray-400">
-        Devices
+      <div className="flex flex-row justify-start gap-2 items-center border border-r-0 rounded p-3 rounded-r-none text-gray-900 dark:text-white">
+        <Tooltip
+          tooltip="Reload devices"
+          className="top-6 left-2"
+        >
+          <Reload
+            className={`cursor-pointer w-5 ${loading && "animate-spin"}`}
+            onClick={() => {
+              setLoading(true);
+              getDevices();
+            }}
+          />
+        </Tooltip>
+
+        <Tooltip
+          tooltip="Spotify must be open to be found"
+          className="top-6 left-2"
+          tooltipClassName={`${
+            devicesLoaded && devices?.length === 0 ? "block" : "hidden"
+          }`}
+        >
+          <InfoCircle className="w-5" />
+        </Tooltip>
       </div>
 
       <select
@@ -41,35 +62,11 @@ export const Devices = (
         disabled={!devicesLoaded || devices?.length === 0}
         className="w-full rounded-l-none"
       >
-        {devices?.length === 0 && <option value="">None Found</option>}
+        {devices?.length === 0 && <option value="">No Device Found</option>}
         {devices.map(({ id, name }: Device) => (
           <option className="px-2 mx-2" value={id || ""}>{name}</option>
         ))}
       </select>
-
-      <Tooltip
-        tooltip="Reload devices"
-        className="top-6 right-2"
-        tooltipClassName="ml-2"
-      >
-        <Reload
-          className={`cursor-pointer w-6 h-6 ${loading && "animate-spin"}`}
-          onClick={() => {
-            setLoading(true);
-            getDevices();
-          }}
-        />
-      </Tooltip>
-
-      <Tooltip
-        tooltip="Spotify must be open to be found."
-        className="top-6 right-2"
-        tooltipClassName={`ml-2  ${
-          devicesLoaded && devices?.length === 0 ? "block" : "hidden"
-        }`}
-      >
-        <InfoCircle className="w-6 h-6 " />
-      </Tooltip>
     </div>
   );
 };
