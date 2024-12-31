@@ -154,6 +154,19 @@ export const Search = (
                 target.style.height = target.scrollHeight + "px";
                 setPrompt(target.value);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  const form = document.getElementById(
+                    "promptForm",
+                  ) as HTMLFormElement;
+                  const syntheticEvent = {
+                    preventDefault: () => {},
+                    currentTarget: form,
+                  } as FormEvent<HTMLFormElement>;
+                  submit(syntheticEvent);
+                }
+              }}
               className="w-full rounded-br-none rounded-bl-none overflow-hidden border-r-0 rounded-r-none resize-none"
             />
             <div className="flex flex-row justify-end items-start border border-gray-200 dark:bg-gray-900 py-3 px-2 rounded border-l-0 rounded-l-none text-gray-900 dark:text-white gap-2">
