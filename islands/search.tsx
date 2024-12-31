@@ -144,7 +144,6 @@ export const Search = (
             <textarea
               rows={1}
               id="prompt"
-              type="text"
               name="prompt"
               placeholder="what do you want to listen to?"
               required
