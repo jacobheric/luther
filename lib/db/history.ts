@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/db/supabase.ts";
 import { Session } from "@supabase/supabase-js";
+import { getUser } from "@/lib/db/user.ts";
 
 export const saveSearch = async (session: Session, search: string) => {
   supabase.auth.setSession(session);
@@ -20,8 +21,7 @@ export const getSearchHistory = async (
   session: Session,
   limit: number = 20,
 ) => {
-  supabase.auth.setSession(session);
-  const user = await supabase.auth.getUser(session.access_token);
+  const user = await getUser(session);
 
   const { data, error } = await supabase
     .from("searches")

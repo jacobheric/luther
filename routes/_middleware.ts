@@ -6,7 +6,6 @@ import { createSupabaseClient } from "@/lib/supabase.ts";
 import {
   getSpotifyToken,
   refreshSpotifyToken,
-  setSpotifyToken,
   SpotifyToken,
 } from "@/lib/spotify/token.ts";
 import { redirect } from "@/lib/utils.ts";
@@ -43,7 +42,7 @@ const appendHeaders = (oldResponse: Response, newResponse: Response) => {
 };
 
 const authHandler = async (
-  ctx: FreshContext<AuthState>,
+  ctx: FreshContext<{ spotifyToken: SpotifyToken } & AuthState>,
 ) => {
   const url = new URL(ctx.req.url);
 
@@ -75,11 +74,8 @@ const authHandler = async (
   return nextResp;
 };
 
-//
-// the spotify ts sdk handles auth tokens and refresh interally
-// so we just look for an active user session
 const spotifyTokenHandler = async (
-  ctx: FreshContext<{ spotifyToken: SpotifyToken }>,
+  ctx: FreshContext<{ spotifyToken: SpotifyToken } & AuthState>,
 ) => {
   const url = new URL(ctx.req.url);
   if (
@@ -88,26 +84,20 @@ const spotifyTokenHandler = async (
     return ctx.next();
   }
 
-  const token = getSpotifyToken(ctx);
+  const token = await getSpotifyToken(ctx);
 
   if (!token) {
     return spotifyLoginRedirect();
   }
 
-  const refreshedToken = await refreshSpotifyToken(token);
+  const refreshedToken = await refreshSpotifyToken(ctx, token);
 
   if (!refreshedToken) {
     return spotifyLoginRedirect();
   }
 
   ctx.state.spotifyToken = refreshedToken;
-
-  const resp = new Response();
-
-  setSpotifyToken(resp.headers, ctx.state.spotifyToken);
-  const nextResp = await ctx.next();
-  appendHeaders(resp, nextResp);
-  return nextResp;
+  return ctx.next();
 };
 
 export const handler = [authHandler, spotifyTokenHandler];

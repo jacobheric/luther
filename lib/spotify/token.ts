@@ -1,7 +1,10 @@
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
 import { redirect } from "@/lib/utils.ts";
-import { getCookies, setCookie } from "@std/http/cookie";
+import { getCookies } from "@std/http/cookie";
 import { FreshContext } from "fresh";
+import { AuthState } from "@/routes/_middleware.ts";
+import { supabase } from "@/lib/db/supabase.ts";
+import { getUser } from "@/lib/db/user.ts";
 
 export type SpotifyToken = {
   access_token: string;
@@ -11,18 +14,54 @@ export type SpotifyToken = {
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
-export const setSpotifyToken = (
-  headers: Headers,
+export const setSpotifyToken = async (
+  ctx: FreshContext<AuthState>,
   token: SpotifyToken,
-) =>
-  setCookie(headers, {
-    name: "spotifyToken",
-    path: "/",
-    value: encodeURIComponent(JSON.stringify(token)),
-    maxAge: 400 * 24 * 60 * 60,
-  });
+) => {
+  if (!ctx.state.session) {
+    console.error("no auth session, ignoring setSpotifyToken");
+    return;
+  }
 
-export const getSpotifyToken = (ctx: FreshContext) => {
+  const user = await getUser(ctx.state.session);
+
+  const { error } = await supabase
+    .from("users")
+    .upsert([
+      {
+        user_id: user.data.user?.id,
+        spotify_token: token,
+      },
+    ]);
+
+  if (error) {
+    console.error("error upserting spotify token", error);
+  }
+};
+
+export const getSpotifyToken = async (ctx: FreshContext<AuthState>) => {
+  if (ctx.state.session) {
+    const user = await getUser(ctx.state.session);
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("spotify_token")
+      .eq("user_id", user.data.user?.id)
+      .single();
+
+    if (error) {
+      console.error("error fetching spotify token", error);
+      return null;
+    }
+
+    if (data?.spotify_token) {
+      return data.spotify_token;
+    }
+  }
+
+  //
+  // TODO: this is deprecated in favor of db storage above
+  // and can be removed soon
   const rawToken = getCookies(ctx.req.headers).spotifyToken;
 
   if (!rawToken) {
@@ -39,6 +78,7 @@ export const getSpotifyToken = (ctx: FreshContext) => {
 };
 
 export const refreshSpotifyToken = async (
+  ctx: FreshContext<AuthState>,
   token: SpotifyToken | null,
 ) => {
   if (!token) {
@@ -81,14 +121,19 @@ export const refreshSpotifyToken = async (
   }
 
   const refreshedToken = await response.json();
-
-  return refreshedToken
+  const adjustedToken = refreshedToken
     ? {
       ...refreshedToken,
       expires_at: Date.now() + (refreshedToken.expires_in * 1000),
       refresh_token: token.refresh_token,
     }
     : null;
+
+  if (adjustedToken) {
+    setSpotifyToken(ctx, adjustedToken);
+  }
+
+  return adjustedToken;
 };
 
 export const getAppToken = async () => {
