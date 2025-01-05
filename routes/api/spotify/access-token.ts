@@ -52,10 +52,11 @@ export const handler = define.handlers({
       headers: { Location: "/" },
     });
 
-    setSpotifyToken(ctx, {
+    setSpotifyToken(response.headers, ctx, {
       ...token,
       expires_at: Date.now() + (token.expires_in * 1000),
     });
+
     return response;
   },
 });

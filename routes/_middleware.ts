@@ -6,6 +6,7 @@ import { createSupabaseClient } from "@/lib/supabase.ts";
 import {
   getSpotifyToken,
   refreshSpotifyToken,
+  setSpotifyToken,
   SpotifyToken,
 } from "@/lib/spotify/token.ts";
 import { redirect } from "@/lib/utils.ts";
@@ -90,14 +91,20 @@ const spotifyTokenHandler = async (
     return spotifyLoginRedirect();
   }
 
-  const refreshedToken = await refreshSpotifyToken(ctx, token);
+  const refreshedToken = await refreshSpotifyToken(token);
 
   if (!refreshedToken) {
     return spotifyLoginRedirect();
   }
 
   ctx.state.spotifyToken = refreshedToken;
-  return ctx.next();
+
+  const resp = new Response();
+
+  setSpotifyToken(resp.headers, ctx, ctx.state.spotifyToken);
+  const nextResp = await ctx.next();
+  appendHeaders(resp, nextResp);
+  return nextResp;
 };
 
 export const handler = [authHandler, spotifyTokenHandler];
