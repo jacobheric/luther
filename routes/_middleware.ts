@@ -28,6 +28,7 @@ const unrestricted = [
   "/signup",
   "/password",
   "/logout",
+  "/policies",
 ];
 
 const unrestrictedSpotify = [
