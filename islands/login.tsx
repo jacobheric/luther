@@ -23,7 +23,7 @@ export const LoginForm = ({ error }: { error?: string }) => {
           <button type="submit" disabled={!accepted}>
             Login
           </button>
-          <div class="flex flex-row gap-1 items-center justify-start">
+          <div class="flex flex-row gap-x-2 items-center justify-start flex-wrap">
             <input
               type="checkbox"
               checked={accepted}

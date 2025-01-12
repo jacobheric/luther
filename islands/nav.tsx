@@ -63,7 +63,7 @@ export const Nav = (
             {pathname !== "/signup" && pathname !== "/" &&
               (
                 <a
-                  href="/login"
+                  href="/signup"
                   class="block px-4 py-3  hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
                 >
                   Signup
