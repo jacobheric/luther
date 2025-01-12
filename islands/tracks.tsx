@@ -179,7 +179,19 @@ export const Tracks = ({ test }: { test?: boolean }) => {
                 i !== SONGS.value.length - 1 && "border-b"
               } border-gray-200 w-full mb-2 pb-2`}
             >
-              <div class="flex flex-col gap-1">
+              <div class="flex flex-col gap-2 items-center justify-center">
+                <Tooltip
+                  className="left-9 top-0"
+                  tooltip="Open on Spotify"
+                >
+                  <a
+                    href={song.external_urls.spotify}
+                    target="_blank"
+                    class="cursor-pointer"
+                  >
+                    <img src="/spotify.svg" class="w-7 h-7" />
+                  </a>
+                </Tooltip>
                 <Controls
                   remove={() =>
                     SONGS.value = SONGS.value.filter((_, index) => i !== index)}

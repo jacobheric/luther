@@ -44,9 +44,9 @@ export const Controls = (
     >
       <Button
         type="button"
-        className="h-8 w-8 flex items-center justify-center"
+        className="h-7 w-7 flex items-center justify-center"
       >
-        <ControlIcon className="w-6 h-6" />
+        <ControlIcon className="w-5 h-5" />
       </Button>
 
       {showDropdown &&

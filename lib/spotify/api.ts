@@ -9,7 +9,7 @@ import { SpotifyToken } from "./token.ts";
 
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
-export type TrackLite = Pick<Track, "name" | "uri"> & {
+export type TrackLite = Pick<Track, "name" | "uri" | "external_urls"> & {
   album: Pick<Track["album"], "name" | "images">;
   artists: { name: string }[];
 };
@@ -17,6 +17,7 @@ export type TrackLite = Pick<Track, "name" | "uri"> & {
 const pareTrack = (track: Track): TrackLite => {
   const {
     name,
+    external_urls,
     album: { name: albumName, images },
     uri,
     artists,
@@ -24,6 +25,7 @@ const pareTrack = (track: Track): TrackLite => {
 
   return {
     name,
+    external_urls,
     album: { name: albumName, images },
     uri,
     artists: [{ name: artists[0]?.name }],
