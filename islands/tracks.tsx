@@ -185,7 +185,7 @@ export const Tracks = ({ test }: { test?: boolean }) => {
                   tooltip="Open on Spotify"
                 >
                   <a
-                    href={song.external_urls.spotify}
+                    href={song.external_urls?.spotify}
                     target="_blank"
                     class="cursor-pointer"
                   >
