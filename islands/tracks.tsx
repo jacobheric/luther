@@ -189,7 +189,7 @@ export const Tracks = ({ test }: { test?: boolean }) => {
                     target="_blank"
                     class="cursor-pointer"
                   >
-                    <img src="/spotify.svg" class="w-7 h-7" />
+                    <img src="/spotify.svg" class="w-7 h-7 dark:invert" />
                   </a>
                 </Tooltip>
                 <Controls
