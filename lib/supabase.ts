@@ -14,7 +14,11 @@ export function createSupabaseClient(req: Request, resp: Response) {
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
     cookies: {
       getAll() {
-        return parseCookieHeader(req.headers.get("Cookie") || "");
+        const cookies = parseCookieHeader(req.headers.get("Cookie") || "");
+        return cookies.map(({ name, value }) => ({
+          name,
+          value: value || "", // Ensure value is never undefined
+        }));
       },
 
       setAll(cookiesToSet) {
