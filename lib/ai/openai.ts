@@ -4,6 +4,10 @@ import type {
   ChatCompletionCreateParamsNonStreaming,
 } from "openai/resources/chat/completions";
 import OpenAI from "openai";
+import {
+  ResponseCreateParamsStreaming,
+  ResponseTextDeltaEvent,
+} from "openai/resources/responses";
 
 const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
 
@@ -27,4 +31,16 @@ export const streamCompletion = async (
   }
 
   return await openai.chat.completions.create(input);
+};
+
+export const streamResponse = async (
+  input: ResponseCreateParamsStreaming,
+): Promise<AsyncIterable<ResponseTextDeltaEvent>> => {
+  if (!openai) {
+    console.error("open ai sdk not instantiated");
+    throw Error("open ai sdk not instantiated");
+  }
+  return (await openai.responses.create(input)) as unknown as AsyncIterable<
+    ResponseTextDeltaEvent
+  >;
 };

@@ -169,7 +169,7 @@ export const Search = (
               }}
               className="w-full rounded-br-none rounded-bl-none overflow-hidden border-r-0 rounded-r-none resize-none"
             />
-            <div className="flex flex-row justify-end items-start pt-3 border border-gray-200 dark:bg-gray-900 px-2 rounded border-l-0 rounded-l-none text-gray-900 dark:text-white gap-2">
+            <div className="flex flex-row justify-end items-start pt-3 border border-gray-200 dark:bg-gray-900 px-2 rounded border-l-0 rounded-l-none rounded-b-none text-gray-900 dark:text-white gap-2">
               {prompt
                 ? (
                   <X
@@ -229,6 +229,20 @@ export const Search = (
                 />
               </Modal>
             </div>
+          </div>
+          <div className="border border-gray-200 dark:bg-gray-900 px-2 rounded border-t-0 rounded-t-none">
+            <select
+              name="mode"
+              id="mode"
+              className="h-6 w-auto min-w-fit pr-6 py-0 px-2 text-xs border-none"
+            >
+              <option value="smart">
+                prefer smart
+              </option>
+              <option value="recent">
+                prefer recent
+              </option>
+            </select>
           </div>
         </div>
         <button
