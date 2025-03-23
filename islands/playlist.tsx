@@ -35,23 +35,21 @@ export const PlaylistModal = (
   return (
     <form onSubmit={submit} className="w-full">
       <div className="flex flex-col justify-start items-center w-full">
-        <>
-          <label className="w-full text-sm font-semibold">
-            Existing or new?
-          </label>
-          <select
-            name="playlistId"
-            id="playlistId"
-            className="w-full border"
-            onChange={(e) => setPlaylist((e.target as HTMLSelectElement).value)}
-            class="w-full"
-          >
-            <option className="p-3 m-3" value="" selected>New playlist</option>
-            {playlists.map(({ id, name }: Playlist) => (
-              <option className="p-3 m-3" value={id || ""}>{name}</option>
-            ))}
-          </select>
-        </>
+        <label className="w-full text-sm font-semibold">
+          Existing or new?
+        </label>
+        <select
+          name="playlistId"
+          id="playlistId"
+          className="w-full border"
+          onChange={(e) => setPlaylist((e.target as HTMLSelectElement).value)}
+          class="w-full"
+        >
+          <option className="p-3 m-3" value="" selected>New playlist</option>
+          {playlists.map(({ id, name }: Playlist) => (
+            <option className="p-3 m-3" value={id || ""}>{name}</option>
+          ))}
+        </select>
 
         {playlist === "" &&
           (
@@ -61,7 +59,7 @@ export const PlaylistModal = (
               id="playlistName"
               className="w-full mt-4"
               placeholder="New playlist name"
-              required={true}
+              required
             />
           )}
 

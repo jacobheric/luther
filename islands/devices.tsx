@@ -14,10 +14,6 @@ export const Devices = (
   const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (!tracks) {
-    return null;
-  }
-
   const getDevices = async () => {
     const response = await fetch(`/api/spotify/devices`);
     setDevices(JSON.parse(await response.text()));
@@ -26,8 +22,14 @@ export const Devices = (
   };
 
   useEffect(() => {
-    getDevices();
-  }, []);
+    if (tracks) {
+      getDevices();
+    }
+  }, [tracks]);
+
+  if (!tracks) {
+    return null;
+  }
 
   return (
     <div className="flex flex-row justify-between md:justify-start items-center w-full">
