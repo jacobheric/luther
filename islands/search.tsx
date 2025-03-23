@@ -230,11 +230,11 @@ export const Search = (
               </Modal>
             </div>
           </div>
-          <div className="border border-gray-200 dark:bg-gray-900 px-2 rounded border-t-0 rounded-t-none">
+          <div className="border border-gray-200 dark:bg-gray-900 px-0 rounded border-t-0 rounded-t-none">
             <select
               name="mode"
               id="mode"
-              className="h-6 w-auto min-w-fit pr-6 py-0 px-2 text-xs border-none"
+              className="h-6 w-auto min-w-fit pr-6 py-0 text-xs border-none"
             >
               <option value="smart">
                 prefer smart
