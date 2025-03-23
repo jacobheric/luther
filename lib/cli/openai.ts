@@ -189,10 +189,6 @@ export const responsesWebSearch = async () => {
     tools: [
       {
         "type": "web_search_preview",
-        "user_location": {
-          "type": "approximate",
-        },
-        "search_context_size": "medium",
       },
     ],
     tool_choice: {
@@ -247,7 +243,7 @@ export const responsesWebSearch = async () => {
       Ensure the song and album names are accurate and likely to be found on Spotify. 
 
       Prompt: ### 
-      latest amyl and the sniffers
+      amyl and the sniffers latest album
       ###`,
     }],
   });

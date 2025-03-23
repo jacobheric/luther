@@ -19,10 +19,6 @@ export const getInput = (
     ? {
       tools: [{
         "type": "web_search_preview",
-        "user_location": {
-          "type": "approximate",
-        },
-        "search_context_size": "medium",
       }],
       tool_choice: {
         "type": "web_search_preview",
