@@ -17,6 +17,7 @@ const Tooltip = (
         className={`relative ${tooltipClassName || ""}`}
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
+        onClick={() => isVisible && setIsVisible(false)}
       >
         {children}
         {isVisible && (

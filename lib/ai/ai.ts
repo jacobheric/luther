@@ -4,18 +4,17 @@ import { searchSong, TrackLite } from "@/lib/spotify/api.ts";
 import { getAppToken } from "@/lib/spotify/token.ts";
 import { extractSongs } from "@/lib/ai/songs.ts";
 
-export type Mode = "smart" | "recent";
 export const TEMP = 1;
-export const MODE: Mode = "smart";
+export const WEB = false;
 
 export const getInput = (
   prompt: string,
-  mode: Mode = MODE,
+  web: boolean = WEB,
   temperature: number = TEMP,
 ) => ({
   stream: true,
   model: "gpt-4o",
-  ...(mode === "recent"
+  ...(web
     ? {
       tools: [{
         "type": "web_search_preview",
@@ -81,17 +80,17 @@ export const getInput = (
 
 export const streamSongs = async ({
   prompt,
-  mode = MODE,
+  web = WEB,
   temp = TEMP,
   controller,
 }: {
   prompt: string;
-  mode?: Mode;
+  web?: boolean;
   temp?: number;
   controller: ReadableStreamDefaultController<Uint8Array>;
 }) => {
   const appToken = await getAppToken();
-  const input = getInput(prompt, mode, temp);
+  const input = getInput(prompt, web, temp);
 
   const stream = await streamResponse(input);
 

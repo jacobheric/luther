@@ -1,22 +1,16 @@
 import { define } from "@/lib/state.ts";
 
-import { Mode, streamSongs } from "@/lib/ai/ai.ts";
+import { streamSongs } from "@/lib/ai/ai.ts";
 import { saveSearch } from "@/lib/db/history.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {
     const form = await ctx.req.formData();
     const prompt = form.get("prompt")?.toString();
-    const mode = form.get("mode")?.toString() as Mode | undefined;
+    const web = form.get("web")?.toString() === "on";
 
     if (!prompt) {
       return new Response("prompt is required", { status: 400 });
-    }
-
-    if (mode && !["smart", "recent", "fast"].includes(mode)) {
-      return new Response("mode must be smart, recent, or fast", {
-        status: 400,
-      });
     }
 
     //
@@ -27,7 +21,7 @@ export const handler = define.handlers({
 
     const body = new ReadableStream({
       start(controller) {
-        streamSongs({ prompt, mode, controller });
+        streamSongs({ prompt, web, controller });
       },
     });
 

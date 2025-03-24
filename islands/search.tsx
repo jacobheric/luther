@@ -7,6 +7,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import X from "tabler-icons/tsx/x.tsx";
 import Q from "tabler-icons/tsx/question-mark.tsx";
+import WWW from "tabler-icons/tsx/world.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
 
 import { type History as HistoryType } from "@/routes/index.tsx";
@@ -16,6 +17,12 @@ import { HistoryModal } from "@/islands/history.tsx";
 import IconClock from "tabler-icons/tsx/clock.tsx";
 
 const NOT_FOUND = "No songs found, try adjusting your prompt.";
+
+const getStoredWWW = () =>
+  IS_BROWSER && globalThis.localStorage.getItem("www") === "true";
+
+const storeWWW = (www: boolean) =>
+  IS_BROWSER && globalThis.localStorage.setItem("www", www ? "true" : "false");
 
 const getStoredPrompt = () =>
   IS_BROWSER ? globalThis.localStorage.getItem("storedPrompt") ?? "" : "";
@@ -61,8 +68,11 @@ export const Search = (
   const [prompt, setPrompt] = useState(
     getStoredPrompt(),
   );
+  const [www, setWWW] = useState(getStoredWWW());
 
   useEffect(() => {
+    setWWW(getStoredWWW());
+
     if (SONGS.value.length) {
       return;
     }
@@ -167,82 +177,67 @@ export const Search = (
                   submit(syntheticEvent);
                 }
               }}
-              className="w-full rounded-br-none rounded-bl-none overflow-hidden border-r-0 rounded-r-none resize-none"
+              className="w-full rounded-br-none rounded-bl-none overflow-hidden rounded-r-none resize-none"
             />
-            <div className="flex flex-row justify-end items-start pt-3 border border-gray-200 dark:bg-gray-900 px-2 rounded border-l-0 rounded-l-none rounded-b-none text-gray-900 dark:text-white gap-2">
-              {prompt
-                ? (
-                  <X
-                    className="cursor-pointer w-5"
-                    onClick={() => setPrompt("")}
-                  />
-                )
-                : (
-                  <Tooltip
-                    tooltip={
-                      <div>
-                        things to try: <br />
-                        "Tom Petty deep cuts" <br />
-                        "sad songs by Lana Del Rey" <br />
-                        "indie summer 2010"
-                      </div>
-                    }
-                    className="top-6 right-2"
-                    tooltipClassName="p-0 m-0 block"
-                  >
-                    <Q className="cursor-pointer w-5" />
-                  </Tooltip>
-                )}
-              {history?.length
-                ? (
-                  <IconClock
-                    className="cursor-pointer w-5"
-                    onClick={() => {
-                      (document.getElementById(
-                        "search-history",
-                      ) as HTMLDialogElement)?.showModal();
-                    }}
-                  />
-                )
-                : null}
-              <Modal id="search-history" title="Search History">
-                <HistoryModal
-                  modalId="search-history"
-                  search={(search) => {
-                    const prompt = search ?? "";
-                    setPrompt(prompt);
+          </div>
+          <div className="border border-gray-200 dark:bg-gray-900 rounded border-t-0 rounded-t-none flex flex-row justify-end items-center px-2 py-1 gap-2">
+            <input type="checkbox" name="web" id="web" hidden checked={www} />
+
+            {prompt
+              ? (
+                <X
+                  className="cursor-pointer w-5 opacity-60"
+                  onClick={() => setPrompt("")}
+                />
+              )
+              : (
+                <Tooltip
+                  tooltip={
+                    <div>
+                      things to try: <br />
+                      "Tom Petty deep cuts" <br />
+                      "sad songs by Lana Del Rey" <br />
+                      "indie summer 2010"
+                    </div>
+                  }
+                  className="top-6 right-2"
+                  tooltipClassName="p-0 m-0 block"
+                >
+                  <Q className="cursor-pointer w-5 opacity-60" />
+                </Tooltip>
+              )}
+            {history?.length
+              ? (
+                <IconClock
+                  className="cursor-pointer w-5 opacity-60"
+                  onClick={() => {
                     (document.getElementById(
-                      "prompt",
-                    ) as HTMLInputElement).value = prompt;
-
-                    const form = document.getElementById(
-                      "promptForm",
-                    ) as HTMLFormElement;
-
-                    const syntheticEvent = {
-                      preventDefault: () => {},
-                      currentTarget: form,
-                    } as FormEvent<HTMLFormElement>;
-
-                    submit(syntheticEvent);
+                      "search-history",
+                    ) as HTMLDialogElement)?.showModal();
                   }}
                 />
-              </Modal>
-            </div>
-          </div>
-          <div className="border border-gray-200 dark:bg-gray-900 px-0 rounded border-t-0 rounded-t-none">
-            <select
-              name="mode"
-              id="mode"
-              className="h-6 w-auto min-w-fit pr-6 py-0 text-xs border-none"
+              )
+              : null}
+
+            <Tooltip
+              tooltip={
+                <div>
+                  Search the web. Slower, but useful for new songs
+                </div>
+              }
+              className="top-6 right-2"
+              tooltipClassName="p-0 m-0 block"
             >
-              <option value="smart">
-                prefer smart
-              </option>
-              <option value="recent">
-                prefer recent
-              </option>
-            </select>
+              <WWW
+                className={`cursor-pointer w-5 opacity-60 ${
+                  www ? "text-blue-600" : ""
+                }`}
+                onClick={() => {
+                  storeWWW(!www);
+                  setWWW(!www);
+                }}
+              />
+            </Tooltip>
           </div>
         </div>
         <button
@@ -260,6 +255,29 @@ export const Search = (
           </div>
         </button>
       </div>
+      <Modal id="search-history" title="Search History">
+        <HistoryModal
+          modalId="search-history"
+          search={(search) => {
+            const prompt = search ?? "";
+            setPrompt(prompt);
+            (document.getElementById(
+              "prompt",
+            ) as HTMLInputElement).value = prompt;
+
+            const form = document.getElementById(
+              "promptForm",
+            ) as HTMLFormElement;
+
+            const syntheticEvent = {
+              preventDefault: () => {},
+              currentTarget: form,
+            } as FormEvent<HTMLFormElement>;
+
+            submit(syntheticEvent);
+          }}
+        />
+      </Modal>
     </form>
   );
 };
