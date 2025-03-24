@@ -1,4 +1,5 @@
 import {
+  CLOUDFLARE_TURNSTILE_SECRET_KEY,
   CLOUDFLARE_TURNSTILE_SITE_KEY,
   ME_EMAIL,
   RESEND_API_KEY,
@@ -9,12 +10,12 @@ import { Resend } from "resend";
 
 export const handler = define.handlers({
   async POST(ctx) {
-    // ctx.state.script = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    ctx.state.script = "https://challenges.cloudflare.com/turnstile/v0/api.js";
 
     const form = await ctx.req.formData();
     const email = form.get("email")?.toString();
-    // const token = form.get("cf-turnstile-response")?.toString();
-    // const ip = ctx.req.headers.get("host");
+    const token = form.get("cf-turnstile-response")?.toString();
+    const ip = ctx.req.headers.get("host");
 
     if (!email) {
       return page({
@@ -22,24 +23,24 @@ export const handler = define.handlers({
       });
     }
 
-    // const formData = new FormData();
-    // formData.append("secret", CLOUDFLARE_TURNSTILE_SECRET_KEY!);
-    // formData.append("response", token ?? "");
-    // formData.append("remoteip", ip ?? "");
+    const formData = new FormData();
+    formData.append("secret", CLOUDFLARE_TURNSTILE_SECRET_KEY!);
+    formData.append("response", token ?? "");
+    formData.append("remoteip", ip ?? "");
 
-    // const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-    // const result = await fetch(url, {
-    //   body: formData,
-    //   method: "POST",
-    // });
+    const url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    const result = await fetch(url, {
+      body: formData,
+      method: "POST",
+    });
 
-    // const outcome = await result.json();
-    // if (!outcome.success) {
-    //   console.error("failed to verify turnstile", outcome);
-    //   return page({
-    //     error: new Error("This is for humans"),
-    //   });
-    // }
+    const outcome = await result.json();
+    if (!outcome.success) {
+      console.error("failed to verify turnstile", outcome);
+      return page({
+        error: new Error("This is for humans"),
+      });
+    }
 
     const resend = new Resend(RESEND_API_KEY);
 
@@ -71,8 +72,14 @@ export default function Login(
   return (
     <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6 ">
       <div class="prose dark:prose-invert">
-        Listen to Luther is still learning to get his groove on. Sign up and
-        we'll send you an invite when he's fully rockin'.
+        Sorry, Spotify has rejected our request to let <b>Luther</b>{" "}
+        be accessible here by the general public!
+      </div>
+      <div class="prose dark:prose-invert">
+        But, Luther is open source so you can run your own instance! See the
+        {" "}
+        <a href="https://github.com/jacobheric/luther">repo</a>{" "}
+        for more information.
       </div>
       {data?.error && <p class="text-red-500">{data?.error?.message}</p>}
       {data?.success && <p>Invitation sent! We'll get back to you shortly.</p>}
@@ -101,13 +108,11 @@ export default function Login(
             Sign up
           </button>
 
-          {
-            /* <div
+          <div
             class="cf-turnstile"
             data-sitekey={data.siteKey}
             data-size="flexible"
-          /> */
-          }
+          />
         </div>
       </form>
     </div>
