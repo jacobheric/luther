@@ -177,16 +177,16 @@ export const Search = (
                   submit(syntheticEvent);
                 }
               }}
-              className="w-full rounded-br-none rounded-bl-none overflow-hidden rounded-r-none resize-none"
+              className="w-full rounded-br-none rounded-bl-none overflow-hidden resize-none border-b-0.5"
             />
           </div>
-          <div className="border border-gray-200 dark:bg-gray-900 rounded border-t-0 rounded-t-none flex flex-row justify-end items-center px-2 py-1 gap-2">
+          <div className="border border-gray-200 dark:bg-gray-900 rounded border-t-0 rounded-t-none flex flex-row justify-end items-center p-2 gap-2">
             <input type="checkbox" name="web" id="web" hidden checked={www} />
 
             {prompt
               ? (
                 <X
-                  className="cursor-pointer w-5 opacity-60"
+                  className="cursor-pointer w-6 opacity-60"
                   onClick={() => setPrompt("")}
                 />
               )
@@ -203,13 +203,13 @@ export const Search = (
                   className="top-6 right-2"
                   tooltipClassName="p-0 m-0 block"
                 >
-                  <Q className="cursor-pointer w-5 opacity-60" />
+                  <Q className="cursor-pointer w-6 opacity-60" />
                 </Tooltip>
               )}
             {history?.length
               ? (
                 <IconClock
-                  className="cursor-pointer w-5 opacity-60"
+                  className="cursor-pointer w-6 opacity-60"
                   onClick={() => {
                     (document.getElementById(
                       "search-history",
@@ -229,7 +229,7 @@ export const Search = (
               tooltipClassName="p-0 m-0 block"
             >
               <WWW
-                className={`cursor-pointer w-5 opacity-60 ${
+                className={`cursor-pointer w-6 opacity-60 ${
                   www ? "text-blue-600" : ""
                 }`}
                 onClick={() => {
