@@ -8,6 +8,7 @@ import Tooltip from "@/islands/tooltip.tsx";
 import { ERROR, SONGS } from "@/lib/signals/songs.ts";
 import { testSongs } from "@/lib/test/data.ts";
 import { type Device, type Track } from "@spotify/web-api-ts-sdk";
+import X from "tabler-icons/tsx/x.tsx";
 import { type FormEvent } from "preact/compat";
 import { useRef, useState } from "preact/hooks";
 
@@ -82,8 +83,8 @@ export const Tracks = ({ test }: { test?: boolean }) => {
         value="play"
       />
       <input ref={singleTrackRef} type="hidden" name="singleTrackURI" />
-      <div className="mx-auto flex flex-col gap-2 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full gap-2 flex-wrap md:flex-nowrap">
+      <div className="mx-auto flex flex-col gap-3 w-full mt-2 mb-4">
+        <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full flex-wrap md:flex-nowrap">
           <Devices
             tracks={SONGS.value.length > 0}
             devices={devices}
@@ -177,28 +178,23 @@ export const Tracks = ({ test }: { test?: boolean }) => {
             <div
               className={`flex flex-row justify-start items-center gap-4 ${
                 i !== SONGS.value.length - 1 && "border-b"
-              } border-gray-200 w-full mb-2 pb-2`}
+              } border-gray-200 dark:border-gray-400 w-full pb-3`}
             >
               <div class="flex flex-col gap-2 items-center justify-center">
-                <Tooltip
-                  className="left-9 top-0"
-                  tooltip="Open on Spotify"
-                >
-                  <a
-                    href={song.external_urls?.spotify}
-                    target="_blank"
-                    class="cursor-pointer"
-                  >
-                    <img src="/spotify.svg" class="w-7 h-7 dark:invert" />
-                  </a>
-                </Tooltip>
-                <Controls
-                  remove={() =>
+                <div
+                  class="hover:border-red-500 hover:bg-red-100 hover:text-red-500 no-underline border border-gray-200 rounded w-7 h-7 flex items-center justify-center"
+                  onClick={() =>
                     SONGS.value = SONGS.value.filter((_, index) => i !== index)}
+                >
+                  <X className="cursor-pointer w-6 h-6 opacity-60" />
+                </div>
+
+                <Controls
                   form={formRef.current!}
                   submitType={submitTypeRef.current!}
                   singleTrack={singleTrackRef.current!}
                   trackURI={song.uri}
+                  spotifyURI={song.external_urls?.spotify}
                 />
               </div>
               <div>

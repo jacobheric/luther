@@ -33,13 +33,15 @@ export const Devices = (
 
   return (
     <div className="flex flex-row justify-between md:justify-start items-center w-full">
-      <div className="flex flex-row justify-start gap-2 items-center border border-r-0 rounded p-3 rounded-r-none text-gray-900 dark:text-white">
+      <div className="flex flex-row justify-start gap-2 items-center border border-r-0 rounded p-3 rounded-r-none text-gray-900 dark:text-white border-gray-200">
         <Tooltip
           tooltip="Reload devices"
           className="top-6 left-2"
         >
           <Reload
-            className={`cursor-pointer w-5 ${loading && "animate-spin"}`}
+            className={`cursor-pointer w-6 opacity-60 ${
+              loading && "animate-spin"
+            }`}
             onClick={() => {
               setLoading(true);
               getDevices();
@@ -54,7 +56,7 @@ export const Devices = (
             devicesLoaded && devices?.length === 0 ? "block" : "hidden"
           }`}
         >
-          <InfoCircle className="w-5" />
+          <InfoCircle className="w-6 opacity-60" />
         </Tooltip>
       </div>
 
