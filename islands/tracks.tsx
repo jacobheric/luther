@@ -84,7 +84,7 @@ export const Tracks = ({ test }: { test?: boolean }) => {
       />
       <input ref={singleTrackRef} type="hidden" name="singleTrackURI" />
       <div className="mx-auto flex flex-col gap-3 w-full mt-2 mb-4">
-        <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full flex-wrap md:flex-nowrap">
+        <div className="my-4 flex flex-row justify-between md:justify-end items-center w-full flex-wrap md:flex-nowrap gap-2">
           <Devices
             tracks={SONGS.value.length > 0}
             devices={devices}
