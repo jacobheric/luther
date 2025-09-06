@@ -17,6 +17,10 @@ export const BASIC_AUTH_PASSWORD = Deno.env.get("BASIC_AUTH_PASSWORD");
 
 export const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 export const SUPABASE_PUBLIC_KEY = Deno.env.get("SUPABASE_PUBLIC_KEY");
+
+export const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get(
+  "SUPABASE_SERVICE_ROLE_KEY",
+);
 export const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 export const CLOUDFLARE_TURNSTILE_SITE_KEY = Deno.env.get(

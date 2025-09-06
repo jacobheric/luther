@@ -9,7 +9,7 @@ export const handler = define.handlers({
       });
     }
 
-    const id = ctx.params.id;
+    const id = ctx.url.searchParams.get("id");
 
     if (!id) {
       return new Response("search history` is required", { status: 400 });
