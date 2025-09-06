@@ -1,9 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import {
-  SUPABASE_PUBLIC_KEY,
-  SUPABASE_SERVICE_ROLE_KEY,
-  SUPABASE_URL,
-} from "./config.ts";
+import { SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL } from "./config.ts";
 
 export const supabase = createClient(
   SUPABASE_URL || "http://localhost",

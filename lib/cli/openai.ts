@@ -67,7 +67,8 @@ export const structuredCompletionStream = async () => {
     throw Error("open ai sdk not instantiated");
   }
 
-  const stream = await openai.beta.chat.completions.stream({
+  const stream = await openai.chat.completions.create({
+    stream: true,
     model: "chatgpt-4o-latest",
     temperature: .8,
     messages: [{
@@ -77,14 +78,14 @@ export const structuredCompletionStream = async () => {
     }, {
       role: "user" as const,
       content:
-        `List at least 20 songs based on the following prompt, unless the prompt is for a specifc thing. 
-      Ensure the song and album names are accurate and likely to be found on Spotify. 
+        `List at least 20 songs based on the following prompt, unless the prompt is for a specifc thing.
+      Ensure the song and album names are accurate and likely to be found on Spotify.
 
       Format the response strictly as json in the form of:
       { songs:[{"song": "song name", "album": "album name", "artist": "artist name"}] }
       without any additional information.
 
-      Prompt: ### 
+      Prompt: ###
       tom petty deep cuts
       ###`,
     }],
@@ -248,7 +249,9 @@ export const responsesWebSearch = async () => {
     }],
   });
 
-  for await (const song of extractSongs(stream)) {
+  for await (
+    const song of extractSongs(stream as AsyncIterable<{ delta?: string }>)
+  ) {
     console.log("spotify song", song);
   }
 };
