@@ -1,4 +1,4 @@
-import { ResponseTextDeltaEvent } from "openai/resources/responses";
+import { ResponseStreamEvent } from "openai/resources/responses/responses";
 
 export type Song = {
   artist: string;
@@ -9,12 +9,13 @@ export type Song = {
 const START_TOKEN = '{"songs":[';
 
 export const extractSongs = async function* (
-  stream: AsyncIterable<ResponseTextDeltaEvent>,
+  stream: AsyncIterable<ResponseStreamEvent>,
 ): AsyncGenerator<Song> {
   let buffer = "";
   let started = false;
 
-  for await (const { delta } of stream) {
+  for await (const event of stream) {
+    const delta = "delta" in event ? event.delta : "";
     buffer += delta ?? "";
 
     if (!started) {

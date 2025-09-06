@@ -7,7 +7,7 @@ import OpenAI from "openai";
 import {
   ResponseCreateParamsStreaming,
   ResponseTextDeltaEvent,
-} from "openai/resources/responses";
+} from "openai/resources/responses/responses";
 
 const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
 

@@ -3,6 +3,7 @@ import { streamResponse } from "@/lib/ai/openai.ts";
 import { searchSong, TrackLite } from "@/lib/spotify/api.ts";
 import { getAppToken } from "@/lib/spotify/token.ts";
 import { extractSongs } from "@/lib/ai/songs.ts";
+import { ResponseCreateParamsStreaming } from "openai/resources/responses/responses";
 
 export const TEMP = 1;
 export const WEB = false;
@@ -12,22 +13,20 @@ export const getInput = (
   web: boolean = WEB,
   temperature: number = TEMP,
 ) => ({
-  stream: true,
+  stream: true as const,
   model: "gpt-4o",
   ...(web
     ? {
       tools: [{
         "type": "web_search_preview",
       }],
-      tool_choice: {
-        "type": "web_search_preview",
-      },
+      tool_choice: "web_search_preview" as const,
     }
     : {}),
   temperature,
   text: {
     "format": {
-      "type": "json_schema",
+      "type": "json_schema" as const,
       "name": "song_info",
       "schema": {
         "type": "object",
@@ -92,7 +91,7 @@ export const streamSongs = async ({
   const appToken = await getAppToken();
   const input = getInput(prompt, web, temp);
 
-  const stream = await streamResponse(input);
+  const stream = await streamResponse(input as ResponseCreateParamsStreaming);
 
   for await (
     const song of extractSongs(stream)

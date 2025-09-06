@@ -1,6 +1,7 @@
 import { extractSongs } from "@/lib/ai/songs.ts";
 import { OPENAI_API_KEY } from "@/lib/config.ts";
 import OpenAI from "openai";
+import { ResponseStreamEvent } from "openai/resources/responses/responses";
 
 const openai = OPENAI_API_KEY && new OpenAI({ apiKey: OPENAI_API_KEY });
 
@@ -250,7 +251,7 @@ export const responsesWebSearch = async () => {
   });
 
   for await (
-    const song of extractSongs(stream as AsyncIterable<{ delta?: string }>)
+    const song of extractSongs(stream as AsyncIterable<ResponseStreamEvent>)
   ) {
     console.log("spotify song", song);
   }
