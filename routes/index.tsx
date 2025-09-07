@@ -1,11 +1,9 @@
-import { Search } from "@/islands/search.tsx";
-import { Tracks } from "@/islands/tracks.tsx";
 import { TEST_MODE } from "@/lib/config.ts";
 
-import { define } from "@/lib/state.ts";
-import { page, PageProps } from "fresh";
 import { getSearchHistory } from "@/lib/db/history.ts";
+import { define } from "@/lib/state.ts";
 import { Session } from "@supabase/supabase-js";
+import { page, PageProps } from "fresh";
 
 export type History = {
   id: number;
@@ -47,10 +45,10 @@ export const handler = define.handlers<
 const Index = (
   { data }: PageProps<IndexType>,
 ) => {
+  console.log(data);
   return (
     <div className="flex flex-col w-full">
-      <Search test={data?.testMode} history={data?.history} />
-      <Tracks test={data?.testMode} />
+      test
     </div>
   );
 };
