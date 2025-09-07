@@ -6,7 +6,7 @@ export const supabase = createClient(
   SUPABASE_SERVICE_ROLE_KEY || "test",
 );
 
-Deno.cron("ping supabase", { minute: { every: 1 } }, async () => {
+Deno.cron("ping supabase", { dayOfWeek: { every: 1 } }, async () => {
   const { data, error } = await supabase
     .from("users")
     .select("id").limit(1);
