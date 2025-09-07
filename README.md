@@ -26,5 +26,3 @@ deno task start
 ```
 
 ![](./luther-screenshot.png)
-
-test
