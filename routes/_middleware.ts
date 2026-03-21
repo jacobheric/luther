@@ -1,6 +1,6 @@
 import { Context } from "fresh";
 
-import { PRODUCTION } from "@/lib/config.ts";
+import { IS_DEPLOYED, PRODUCTION } from "@/lib/config.ts";
 import {
   type AppSession,
   clearAuthCookies,
@@ -50,7 +50,7 @@ const authHandler = async (
 ) => {
   const url = new URL(ctx.req.url);
 
-  if (!PRODUCTION) {
+  if (!PRODUCTION && !IS_DEPLOYED) {
     return ctx.next();
   }
 

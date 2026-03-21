@@ -3,7 +3,6 @@ import {
   type Device,
   type Playlist,
   type Track,
-  type User,
 } from "@spotify/web-api-ts-sdk";
 import { SpotifyToken } from "./token.ts";
 
@@ -13,6 +12,14 @@ export type TrackLite = Pick<Track, "name" | "uri" | "external_urls"> & {
   album: Pick<Track["album"], "name" | "images">;
   artists: { name: string }[];
 };
+
+type SpotifyAccessToken = {
+  access_token: string;
+};
+
+const DEFAULT_MARKET = "US";
+const DEFAULT_RETRIES = 2;
+const SEARCH_LIMIT = 5;
 
 const pareTrack = (track: Track): TrackLite => {
   const {
@@ -32,19 +39,122 @@ const pareTrack = (track: Track): TrackLite => {
   };
 };
 
+const delay = async (ms: number) =>
+  await new Promise((resolve) => setTimeout(resolve, ms));
+
+const retryAfterMs = (response: Response, attempt: number) => {
+  const retryAfterHeader = response.headers.get("retry-after");
+  const retryAfterSeconds = retryAfterHeader
+    ? Number.parseFloat(retryAfterHeader)
+    : Number.NaN;
+  const backoffMs = 250 * (2 ** attempt);
+
+  if (!Number.isFinite(retryAfterSeconds) || retryAfterSeconds <= 0) {
+    return backoffMs;
+  }
+
+  return Math.max(backoffMs, retryAfterSeconds * 1000);
+};
+
+const isRetryableStatus = (status: number) =>
+  status === 429 || status === 500 || status === 502 || status === 503 ||
+  status === 504;
+
+const spotifyFetch = async (
+  url: string,
+  init: RequestInit,
+  retries: number = DEFAULT_RETRIES,
+) => {
+  let attempt = 0;
+
+  while (true) {
+    const response = await fetch(url, init);
+
+    if (!isRetryableStatus(response.status) || attempt >= retries) {
+      return response;
+    }
+
+    await delay(retryAfterMs(response, attempt));
+    attempt += 1;
+  }
+};
+
+const normalize = (value: string | undefined | null) =>
+  (value ?? "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const matchScore = (
+  track: Track,
+  {
+    song,
+    artist,
+    album,
+  }: {
+    song: string;
+    artist: string;
+    album?: string;
+  },
+) => {
+  const normalizedSong = normalize(song);
+  const normalizedArtist = normalize(artist);
+  const normalizedAlbum = normalize(album);
+  const trackName = normalize(track.name);
+  const albumName = normalize(track.album?.name);
+  const artistNames = track.artists.map((entry) => normalize(entry.name));
+  const hasArtistExact = artistNames.some((name) => name === normalizedArtist);
+  const hasArtistPartial = artistNames.some((name) =>
+    normalizedArtist.includes(name) || name.includes(normalizedArtist)
+  );
+
+  const songScore = trackName === normalizedSong
+    ? 5
+    : trackName.includes(normalizedSong) || normalizedSong.includes(trackName)
+    ? 3
+    : 0;
+  const artistScore = hasArtistExact ? 5 : hasArtistPartial ? 3 : 0;
+  const albumScore = !normalizedAlbum
+    ? 0
+    : albumName === normalizedAlbum
+    ? 3
+    : albumName.includes(normalizedAlbum) || normalizedAlbum.includes(albumName)
+    ? 1
+    : 0;
+
+  return songScore + artistScore + albumScore;
+};
+
 export const searchSong = async (
-  token: SpotifyToken,
-  { song, artist }: { song: string; album: string; artist: string },
+  token: SpotifyAccessToken,
+  {
+    song,
+    artist,
+    album,
+    market = DEFAULT_MARKET,
+  }: {
+    song: string;
+    album?: string;
+    artist: string;
+    market?: string;
+  },
 ): Promise<TrackLite | null> => {
   if (!song || !artist) {
     return null;
   }
-  const query = encodeURIComponent(`track:${song} artist:${artist}`);
+
+  const query = encodeURIComponent(
+    [
+      `track:${song}`,
+      `artist:${artist}`,
+    ].filter(Boolean).join(" "),
+  );
 
   const searchQuery =
-    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`;
+    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=${SEARCH_LIMIT}&market=${market}`;
 
-  const response = await fetch(
+  const response = await spotifyFetch(
     searchQuery,
     {
       headers: {
@@ -60,18 +170,41 @@ export const searchSong = async (
 
   const result = await response.json();
 
-  const track = result?.tracks?.items[0];
-  return track ? pareTrack(track) : null;
+  const tracks = Array.isArray(result?.tracks?.items)
+    ? result.tracks.items as Track[]
+    : [];
+
+  if (!tracks.length) {
+    return null;
+  }
+
+  const ranked = [...tracks]
+    .map((track) => ({
+      track,
+      score: matchScore(track, { song, artist, album }),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = ranked[0]?.track ?? tracks[0];
+  return best ? pareTrack(best) : null;
 };
 
 export const getDevices = async (token: SpotifyToken): Promise<Device[]> => {
-  const response = await fetch("https://api.spotify.com/v1/me/player/devices", {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token.access_token}`,
-      "Content-Type": "application/json",
+  const response = await spotifyFetch(
+    "https://api.spotify.com/v1/me/player/devices",
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
+
+  if (!response.ok) {
+    console.error("error getting devices", response);
+    throw new Error("There was an error getting your devices!");
+  }
 
   const { devices } = await response.json();
   return devices || [];
@@ -80,7 +213,7 @@ export const getDevices = async (token: SpotifyToken): Promise<Device[]> => {
 export const getPlaylists = async (
   token: SpotifyToken,
 ): Promise<Playlist[]> => {
-  const response = await fetch(
+  const response = await spotifyFetch(
     "https://api.spotify.com/v1/me/playlists?limit=50",
     {
       method: "GET",
@@ -109,7 +242,7 @@ export const queue = async (
     //
     // sdk operation for this is busted, resort to fetch api
     // https://github.com/spotify/web-api-ts-sdk/issues/101
-    await fetch(
+    const response = await spotifyFetch(
       `https://api.spotify.com/v1/me/player/queue?device_id=${deviceId}&uri=${uri}`,
       {
         method: "POST",
@@ -119,6 +252,11 @@ export const queue = async (
         },
       },
     );
+
+    if (!response.ok) {
+      console.error("error queueing spotify track", response);
+      throw new Error("There was an error queueing your tracks!");
+    }
   }
 };
 
@@ -126,8 +264,8 @@ export const play = async (
   token: SpotifyToken,
   deviceId: string,
   uris: string[],
-) =>
-  await fetch(
+) => {
+  const response = await spotifyFetch(
     `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
     {
       method: "PUT",
@@ -142,30 +280,18 @@ export const play = async (
     },
   );
 
+  if (!response.ok) {
+    console.error("error starting spotify playback", response);
+    throw new Error("There was an error starting playback!");
+  }
+};
+
 export const createPlaylist = async (
   token: SpotifyToken,
   playlistName?: string,
 ) => {
-  const userResponse = await fetch(
-    `https://api.spotify.com/v1/me`,
-    {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token.access_token}`,
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!userResponse.ok) {
-    console.error("error creating playlist, couldn't get user", userResponse);
-    throw new Error("There was an error creating your playlist!");
-  }
-
-  const user: User = await userResponse.json();
-
-  const playlistResponse = await fetch(
-    `https://api.spotify.com/v1/users/${user.id}/playlists`,
+  const playlistResponse = await spotifyFetch(
+    "https://api.spotify.com/v1/me/playlists",
     {
       method: "POST",
       headers: {
@@ -205,9 +331,9 @@ export const addToPlaylist = async (
   token: SpotifyToken,
   uris: string[],
   playlistId: string,
-) =>
-  await fetch(
-    `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+) => {
+  const response = await spotifyFetch(
+    `https://api.spotify.com/v1/playlists/${playlistId}/items`,
     {
       method: "POST",
       headers: {
@@ -215,7 +341,13 @@ export const addToPlaylist = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        uris: uris,
+        uris,
       }),
     },
   );
+
+  if (!response.ok) {
+    console.error("error adding tracks to playlist", response);
+    throw new Error("There was an error updating your playlist!");
+  }
+};

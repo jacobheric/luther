@@ -11,6 +11,7 @@ export const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 export const GROK_API_KEY = Deno.env.get("GROK_API_KEY");
 
 export const PRODUCTION = Deno.env.get("PRODUCTION") === "true";
+export const IS_DEPLOYED = Boolean(Deno.env.get("DENO_DEPLOYMENT_ID"));
 
 export const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 export const NEON_DATABASE_URL = Deno.env.get("NEON_DATABASE_URL");

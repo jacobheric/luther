@@ -10,6 +10,15 @@ export type SpotifyToken = {
   expires_at: number;
 };
 
+type SpotifyAppToken = {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  expires_at: number;
+};
+
+let cachedAppToken: SpotifyAppToken | null = null;
+
 type AuthContextState = {
   session?: AppSession | null;
 };
@@ -146,6 +155,13 @@ export const refreshSpotifyToken = async (
 };
 
 export const getAppToken = async () => {
+  if (
+    cachedAppToken &&
+    Date.now() < (cachedAppToken.expires_at - 30_000)
+  ) {
+    return cachedAppToken;
+  }
+
   const body = new URLSearchParams();
   body.append("grant_type", "client_credentials");
 
@@ -163,5 +179,21 @@ export const getAppToken = async () => {
     body,
   });
 
-  return await appTokenResponse.json();
+  if (!appTokenResponse.ok) {
+    console.error("error fetching spotify app token", appTokenResponse);
+    throw new Error("failed to fetch spotify app token");
+  }
+
+  const token = await appTokenResponse.json() as {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+  };
+
+  cachedAppToken = {
+    ...token,
+    expires_at: Date.now() + (token.expires_in * 1000),
+  };
+
+  return cachedAppToken;
 };
