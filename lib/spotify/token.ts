@@ -1,7 +1,6 @@
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
 import { type AppSession, getSessionUserId } from "@/lib/auth.ts";
 import { createNeonDataApiClient } from "@/lib/db/data_api.ts";
-import { redirect } from "@/lib/utils.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
 import { Context } from "fresh";
 
@@ -14,8 +13,6 @@ export type SpotifyToken = {
 type AuthContextState = {
   session?: AppSession | null;
 };
-
-export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
 export const setSpotifyToken = async <T extends AuthContextState>(
   headers: Headers,
@@ -71,7 +68,6 @@ export const getSpotifyToken = async <T extends AuthContextState>(
   }
 
   if (!ctx.state.session) {
-    console.log("no user session, skipping db spotify token fetch");
     return null;
   }
   const userId = getSessionUserId(ctx.state.session);

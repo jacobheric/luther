@@ -15,12 +15,6 @@ export const handler = define.handlers({
       redirectUri: getSpotifyRedirectUri(ctx.url),
     });
   },
-  POST(ctx) {
-    return page({
-      spotifyClientId: SPOTIFY_CLIENT_ID,
-      redirectUri: getSpotifyRedirectUri(ctx.url),
-    });
-  },
 });
 
 export default function SpotifyLogin(

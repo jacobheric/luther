@@ -46,7 +46,7 @@ const getStoredSongs = (): Track[] => {
 
 const setStoredSongs = (songs: Track[]) => {
   if (!IS_BROWSER) {
-    return [];
+    return;
   }
 
   globalThis.localStorage.setItem("storedTracks", JSON.stringify(songs));

@@ -1,7 +1,7 @@
 # Listen to Luther
 
-Spotify's AI DJ X is nice enough...if you want an entirely passive listening
-experience. If you want an interactive experience, Listen to Luther instead!
+Spotify's AI DJ X is nice enough...if you want a very repetitive listening
+experience. If you want more control, Listen to Luther instead!
 
 Luther lives at [listentoluther.com](https://listentoluther.com).
 
