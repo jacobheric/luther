@@ -39,6 +39,31 @@ const unrestrictedSpotify = [
   "/api/spotify/access-token",
 ];
 
+const isApiRoute = (pathname: string) => pathname.startsWith("/api/");
+
+const authRequiredResponse = (url: URL) => {
+  if (isApiRoute(url.pathname)) {
+    const response = Response.json(
+      { error: "Authentication required." },
+      { status: 401 },
+    );
+    clearAuthCookies(response.headers);
+    return response;
+  }
+
+  const response = redirect("/login");
+  clearAuthCookies(response.headers);
+  return response;
+};
+
+const spotifyAuthRequiredResponse = (url: URL) =>
+  isApiRoute(url.pathname)
+    ? Response.json(
+      { error: "Spotify authorization required." },
+      { status: 401 },
+    )
+    : spotifyLoginRedirect();
+
 const appendHeaders = (oldResponse: Response, newResponse: Response) => {
   for (const [key, value] of [...oldResponse.headers]) {
     newResponse.headers.set(key, value);
@@ -63,9 +88,7 @@ const authHandler = async (
   ctx.state.session = getAuthSession(ctx.req);
 
   if (!ctx.state.session || isAccessTokenExpired(ctx.state.session)) {
-    const resp = redirect("/login");
-    clearAuthCookies(resp.headers);
-    return resp;
+    return authRequiredResponse(url);
   }
 
   const nextResp = await ctx.next();
@@ -86,13 +109,13 @@ const spotifyTokenHandler = async (
   const token = await getSpotifyToken(ctx);
 
   if (!token) {
-    return spotifyLoginRedirect();
+    return spotifyAuthRequiredResponse(url);
   }
 
   const refreshedToken = await refreshSpotifyToken(token);
 
   if (!refreshedToken) {
-    return spotifyLoginRedirect();
+    return spotifyAuthRequiredResponse(url);
   }
 
   ctx.state.spotifyToken = refreshedToken;

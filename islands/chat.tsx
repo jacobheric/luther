@@ -1,6 +1,7 @@
 import { Modal } from "@/islands/modal.tsx";
 import { PlaylistModal } from "@/islands/playlist.tsx";
 import { Devices } from "@/islands/devices.tsx";
+import { createBrowserNeonAuthClient } from "@/lib/auth_client.ts";
 import type {
   ChatMessage,
   ChatStreamEvent,
@@ -9,7 +10,7 @@ import type {
 import type { TrackLite } from "@/lib/spotify/api.ts";
 import type { Device } from "@spotify/web-api-ts-sdk";
 import { Cover } from "@/islands/cover.tsx";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { JSX } from "preact";
 import Trash from "tabler-icons/tsx/trash.tsx";
 import Plus from "tabler-icons/tsx/plus.tsx";
@@ -22,6 +23,10 @@ const PLAYLIST_MODAL_ID = "chat-add-to-playlist";
 const REMIX_MODAL_ID = "chat-remix";
 
 const nowIso = () => new Date().toISOString();
+const currentPath = () =>
+  `${globalThis.location.pathname}${globalThis.location.search}` || "/";
+const loginRedirectPath = () =>
+  `/login?redirect=${encodeURIComponent(currentPath())}`;
 
 const parseNdjson = async (
   response: Response,
@@ -74,7 +79,11 @@ const formatTimestamp = (iso: string) =>
     minute: "2-digit",
   });
 
-export const Chat = () => {
+type ChatProps = {
+  authUrl: string;
+};
+
+export const Chat = ({ authUrl }: ChatProps) => {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageView[]>([]);
@@ -89,6 +98,8 @@ export const Chat = () => {
   const [remixPrompt, setRemixPrompt] = useState("");
   const [actionKey, setActionKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const authRedirecting = useRef(false);
+  const sessionSyncPromise = useRef<Promise<boolean> | null>(null);
 
   const hasSongs = useMemo(
     () =>
@@ -98,12 +109,89 @@ export const Chat = () => {
     [messages],
   );
 
-  const fetchThreads = async () => {
-    const response = await fetch("/api/chat/threads");
+  const onAuthRequired = () => {
+    if (authRedirecting.current) {
+      return;
+    }
+
+    authRedirecting.current = true;
+    setError("Session expired. Redirecting to login...");
+    globalThis.location.href = loginRedirectPath();
+  };
+
+  const syncAppSession = async () => {
+    if (sessionSyncPromise.current) {
+      return await sessionSyncPromise.current;
+    }
+
+    const syncTask = (async () => {
+      try {
+        const auth = createBrowserNeonAuthClient(authUrl);
+        const { data, error } = await auth.getSession({
+          query: {
+            disableCookieCache: true,
+          },
+        });
+
+        if (error || !data?.session || !data?.user) {
+          return false;
+        }
+
+        const response = await fetch("/login/callback", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        return response.ok;
+      } catch (error) {
+        console.error("failed to synchronize app session", error);
+        return false;
+      }
+    })();
+
+    sessionSyncPromise.current = syncTask;
+    const didSync = await syncTask;
+    sessionSyncPromise.current = null;
+    return didSync;
+  };
+
+  const fetchWithSessionRecovery = async (
+    input: string,
+    init?: RequestInit,
+  ) => {
+    const response = await fetch(input, init);
+
+    if (response.status !== 401) {
+      return response;
+    }
+
+    const didSync = await syncAppSession();
+
+    if (!didSync) {
+      return response;
+    }
+
+    return await fetch(input, init);
+  };
+
+  const requireOk = (response: Response, message: string) => {
+    if (response.status === 401) {
+      onAuthRequired();
+      throw new Error("authentication required");
+    }
 
     if (!response.ok) {
-      throw new Error("failed to load threads");
+      throw new Error(message);
     }
+  };
+
+  const fetchThreads = async () => {
+    const response = await fetchWithSessionRecovery("/api/chat/threads");
+
+    requireOk(response, "failed to load threads");
 
     const nextThreads = await response.json() as ChatThread[];
     setThreads(nextThreads);
@@ -115,17 +203,18 @@ export const Chat = () => {
     setLoadingThread(true);
 
     try {
-      const response = await fetch(`/api/chat/threads/${threadId}/messages`);
-
-      if (!response.ok) {
-        throw new Error("failed to load messages");
-      }
+      const response = await fetchWithSessionRecovery(
+        `/api/chat/threads/${threadId}/messages`,
+      );
+      requireOk(response, "failed to load messages");
 
       const nextMessages = await response.json() as ChatMessage[];
       setMessages(nextMessages.map(toMessageView));
     } catch (error) {
       console.error("failed to fetch thread messages", error);
-      setError("Could not load chat messages. Please refresh.");
+      if (!authRedirecting.current) {
+        setError("Could not load chat messages. Please refresh.");
+      }
     } finally {
       setLoadingThread(false);
     }
@@ -150,7 +239,9 @@ export const Chat = () => {
         await fetchMessages(nextThreads[0].id);
       } catch (error) {
         console.error("failed to initialize chat", error);
-        setError("Could not load your chat history. Please refresh.");
+        if (!authRedirecting.current) {
+          setError("Could not load your chat history. Please refresh.");
+        }
       }
     })();
   }, []);
@@ -173,7 +264,9 @@ export const Chat = () => {
       await action();
     } catch (error) {
       console.error("spotify action failed", error);
-      setError("Spotify action failed. Please try again.");
+      if (!authRedirecting.current) {
+        setError("Spotify action failed. Please try again.");
+      }
     } finally {
       setActionKey(null);
     }
@@ -208,14 +301,12 @@ export const Chat = () => {
       formData.append("device", device);
       uris.forEach((uri) => formData.append("trackURI", uri));
 
-      const response = await fetch(endpoint, {
+      const response = await fetchWithSessionRecovery(endpoint, {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error(`spotify ${actionName} failed`);
-      }
+      requireOk(response, `spotify ${actionName} failed`);
 
       return;
     }
@@ -231,14 +322,12 @@ export const Chat = () => {
       formData.append("playlistName", playlistName);
     }
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithSessionRecovery(endpoint, {
       method: "POST",
       body: formData,
     });
 
-    if (!response.ok) {
-      throw new Error(`spotify ${actionName} failed`);
-    }
+    requireOk(response, `spotify ${actionName} failed`);
   };
 
   const submit = async (
@@ -290,7 +379,7 @@ export const Chat = () => {
     ]);
 
     try {
-      const response = await fetch("/api/chat/messages", {
+      const response = await fetchWithSessionRecovery("/api/chat/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -302,9 +391,7 @@ export const Chat = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("failed to stream chat");
-      }
+      requireOk(response, "failed to stream chat");
 
       await parseNdjson(response, (event) => {
         if (event.type === "thread_created") {
@@ -370,7 +457,9 @@ export const Chat = () => {
       }
     } catch (error) {
       console.error("chat submit failed", error);
-      setError("Chat failed. Please try again.");
+      if (!authRedirecting.current) {
+        setError("Chat failed. Please try again.");
+      }
       setMessages((current) =>
         current.filter((message) => message.id !== tempAssistantId)
       );
@@ -381,13 +470,14 @@ export const Chat = () => {
 
   const deleteThread = async (threadId: number) => {
     try {
-      const response = await fetch(`/api/chat/threads/${threadId}`, {
-        method: "DELETE",
-      });
+      const response = await fetchWithSessionRecovery(
+        `/api/chat/threads/${threadId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-      if (!response.ok) {
-        throw new Error("failed to delete thread");
-      }
+      requireOk(response, "failed to delete thread");
 
       const remaining = threads.filter((thread) => thread.id !== threadId);
       setThreads(remaining);
@@ -404,7 +494,9 @@ export const Chat = () => {
       await openThread(remaining[0].id);
     } catch (error) {
       console.error("failed to delete thread", error);
-      setError("Failed to delete chat thread.");
+      if (!authRedirecting.current) {
+        setError("Failed to delete chat thread.");
+      }
     }
   };
 
@@ -455,7 +547,7 @@ export const Chat = () => {
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="button"
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
             disabled={actionKey === `${keyPrefix}-play`}
             onClick={() =>
               void withAction(`${keyPrefix}-play`, async () =>
@@ -469,7 +561,7 @@ export const Chat = () => {
           </button>
           <button
             type="button"
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
             disabled={actionKey === `${keyPrefix}-queue`}
             onClick={() =>
               void withAction(`${keyPrefix}-queue`, async () =>
@@ -483,7 +575,7 @@ export const Chat = () => {
           </button>
           <button
             type="button"
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 cursor-pointer"
             onClick={() =>
               startPlaylistFlow([song.uri])}
           >
@@ -491,7 +583,7 @@ export const Chat = () => {
           </button>
           <button
             type="button"
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 cursor-pointer"
             onClick={() =>
               globalThis.open(
                 song.external_urls.spotify,
@@ -513,7 +605,7 @@ export const Chat = () => {
           <div className="font-semibold">Conversations</div>
           <button
             type="button"
-            className="border rounded px-2 py-1 flex flex-row gap-1 items-center"
+            className="border rounded px-2 py-1 flex flex-row gap-1 items-center cursor-pointer"
             onClick={resetForNewChat}
           >
             <Plus className="w-4 h-4" />
@@ -528,7 +620,7 @@ export const Chat = () => {
             <button
               key={thread.id}
               type="button"
-              className={`w-full p-3 border-b text-left flex flex-row justify-between items-start gap-2 ${
+              className={`w-full p-3 border-b text-left flex flex-row justify-between items-start gap-2 cursor-pointer ${
                 activeThreadId === thread.id
                   ? "bg-gray-100 dark:bg-gray-800"
                   : ""
@@ -542,7 +634,7 @@ export const Chat = () => {
                 </div>
               </div>
               <Trash
-                className="w-4 h-4 shrink-0"
+                className="w-4 h-4 shrink-0 cursor-pointer"
                 onClick={(event: JSX.TargetedMouseEvent<SVGElement>) => {
                   event.stopPropagation();
                   void deleteThread(thread.id);
@@ -605,7 +697,7 @@ export const Chat = () => {
                   <div className="flex flex-row flex-wrap gap-2">
                     <button
                       type="button"
-                      className="border rounded px-2 py-1"
+                      className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
                       disabled={actionKey === `${message.id}-play-all`}
                       onClick={() =>
                         void withAction(`${message.id}-play-all`, async () =>
@@ -621,7 +713,7 @@ export const Chat = () => {
                     </button>
                     <button
                       type="button"
-                      className="border rounded px-2 py-1"
+                      className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
                       disabled={actionKey === `${message.id}-queue-all`}
                       onClick={() =>
                         void withAction(`${message.id}-queue-all`, async () =>
@@ -635,7 +727,7 @@ export const Chat = () => {
                     </button>
                     <button
                       type="button"
-                      className="border rounded px-2 py-1"
+                      className="border rounded px-2 py-1 cursor-pointer"
                       onClick={() =>
                         startPlaylistFlow(message.song_cards!.map((song) =>
                           song.uri
@@ -645,7 +737,7 @@ export const Chat = () => {
                     </button>
                     <button
                       type="button"
-                      className="border rounded px-2 py-1"
+                      className="border rounded px-2 py-1 cursor-pointer"
                       onClick={() => startRemixFlow(message.id)}
                     >
                       Remix
@@ -684,7 +776,7 @@ export const Chat = () => {
           <div className="flex flex-row justify-end items-center gap-2">
             <button
               type="button"
-              className="border rounded px-3 py-1"
+              className="border rounded px-3 py-1 cursor-pointer disabled:cursor-not-allowed"
               disabled={submitting || !prompt.trim()}
               onClick={() => void submit()}
             >
@@ -750,14 +842,17 @@ export const Chat = () => {
           <div className="flex flex-row justify-end items-center gap-2 w-full">
             <button
               type="button"
-              className="border rounded px-3 py-1"
+              className="border rounded px-3 py-1 cursor-pointer"
               onClick={() =>
                 (document.getElementById(REMIX_MODAL_ID) as HTMLDialogElement)
                   ?.close()}
             >
               Cancel
             </button>
-            <button type="submit" className="border rounded px-3 py-1">
+            <button
+              type="submit"
+              className="border rounded px-3 py-1 cursor-pointer"
+            >
               Remix
             </button>
           </div>

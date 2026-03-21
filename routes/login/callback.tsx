@@ -12,12 +12,26 @@ const getRedirectTarget = (url: URL) => url.searchParams.get("redirect") ?? "/";
 
 //
 // Better Auth's native getSession() returns { session: { token, ... }, user: { id, email, name, ... } }
+const firstNonEmpty = (values: unknown[]) =>
+  values.find((value): value is string =>
+    typeof value === "string" && value.length > 0
+  ) ?? "";
+
 const toAppSession = (
   body: Record<string, unknown>,
 ): AppSession | null => {
   const session = body.session as Record<string, unknown> | undefined;
   const user = body.user as Partial<AppUser> | undefined;
-  const token = session?.token as string | undefined;
+  const token = firstNonEmpty([
+    session?.token,
+    session?.access_token,
+    body.access_token,
+  ]);
+  const refreshToken = firstNonEmpty([
+    session?.refreshToken,
+    session?.refresh_token,
+    body.refresh_token,
+  ]);
 
   if (!token || !user?.id) {
     return null;
@@ -25,7 +39,7 @@ const toAppSession = (
 
   return {
     access_token: token,
-    refresh_token: "",
+    refresh_token: refreshToken,
     user: { id: user.id, email: user.email, name: user.name },
   };
 };
