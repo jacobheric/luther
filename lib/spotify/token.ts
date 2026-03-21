@@ -1,10 +1,10 @@
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
+import { getSessionUserId } from "@/lib/auth.ts";
+import { sql } from "@/lib/db/sql.ts";
 import { redirect } from "@/lib/utils.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
 import { FreshContext } from "fresh";
 import { AuthState } from "@/routes/_middleware.ts";
-import { supabase } from "@/lib/db/supabase.ts";
-import { getUser } from "@/lib/db/user.ts";
 
 export type SpotifyToken = {
   access_token: string;
@@ -31,17 +31,18 @@ export const setSpotifyToken = async (
     return;
   }
 
-  const user = await getUser(ctx.state.session);
+  const userId = getSessionUserId(ctx.state.session);
 
   //
   // so we don't prompt them to auth spotify again on a new device
-  const { error } = await supabase
-    .from("users")
-    .upsert({ user_id: user.data.user?.id, spotify_token: token }, {
-      onConflict: "user_id",
-    });
-
-  if (error) {
+  try {
+    await sql`
+      insert into public.users (user_id, spotify_token)
+      values (${userId}::uuid, ${JSON.stringify(token)}::jsonb)
+      on conflict (user_id)
+      do update set spotify_token = excluded.spotify_token
+    `;
+  } catch (error) {
     console.error("error upserting spotify token to db", error);
   }
 };
@@ -64,21 +65,22 @@ export const getSpotifyToken = async (ctx: FreshContext<AuthState>) => {
     console.log("no user session, skipping db spotify token fetch");
     return null;
   }
-  const user = await getUser(ctx.state.session);
+  const userId = getSessionUserId(ctx.state.session);
 
-  const { data, error } = await supabase
-    .from("users")
-    .select("spotify_token")
-    .eq("user_id", user.data.user?.id)
-    .single();
+  try {
+    const [row] = await sql<[{ spotify_token: SpotifyToken | null }?]>`
+      select spotify_token
+      from public.users
+      where user_id = ${userId}::uuid
+      limit 1
+    `;
 
-  if (error) {
+    if (row?.spotify_token) {
+      return row.spotify_token;
+    }
+  } catch (error) {
     console.error("error fetching spotify token from db", error);
     return null;
-  }
-
-  if (data?.spotify_token) {
-    return data.spotify_token;
   }
 
   return null;

@@ -42,31 +42,13 @@ export const Nav = (
             >
               Home
             </a>
-            {pathname !== "/about" && (
-              <a
-                href="/about"
-                class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
-              >
-                About
-              </a>
-            )}
             {pathname !== "/login" && pathname !== "/" &&
               (
                 <a
                   href="/login"
-                  class="block px-4 py-3  hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
+                  class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
                 >
                   Login
-                </a>
-              )}
-
-            {pathname !== "/signup" && pathname !== "/" &&
-              (
-                <a
-                  href="/signup"
-                  class="block px-4 py-3  hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
-                >
-                  Signup
                 </a>
               )}
             {pathname === "/" &&

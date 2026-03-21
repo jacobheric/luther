@@ -3,11 +3,12 @@
   "tasks": {
     "ok": "deno fmt --check && deno lint && deno check --unstable-cron .",
 
-    "start": "vite",
+    "dev": "vite dev",
     "build": "vite build",
     "preview": "deno serve -A _fresh/server.js",
 
     "openai": "deno run -A ./lib/cli/openai.ts",
+    "users": "deno run -A ./scripts/neon_users.ts",
     "cron": "deno run -A --unstable-cron ./lib/cron.ts",
     "update": "deno run -A -r https://fresh.deno.dev/update ."
   },
@@ -25,18 +26,19 @@
   "imports": {
     "fresh": "jsr:@fresh/core@^2.2.0",
     "@/": "./",
+    "@neondatabase/neon-js": "npm:@neondatabase/neon-js@0.2.0-beta.1",
+    "@neondatabase/neon-js/auth": "npm:@neondatabase/neon-js@0.2.0-beta.1/auth",
     "@preact/signals": "npm:@preact/signals@^2.8.2",
     "@std/dotenv": "jsr:@std/dotenv",
     "@std/encoding": "jsr:@std/encoding",
     "@spotify/web-api-ts-sdk": "npm:@spotify/web-api-ts-sdk",
     "@std/http": "jsr:@std/http",
     "@std/assert": "jsr:@std/assert",
-    "@supabase/ssr": "npm:@supabase/ssr@0.7.0",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.57.2",
     "@tailwindcss/typography": "npm:@tailwindcss/typography",
     "openai": "npm:openai@^6.32.0",
     "preact": "npm:preact@^10.29.0",
     "preact-render-to-string": "npm:preact-render-to-string@^6.6.6",
+    "postgres": "npm:postgres@^3.4.8",
     "resend": "npm:resend@^6.9.4",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.8",
     "vite": "npm:vite@^7.3.1",

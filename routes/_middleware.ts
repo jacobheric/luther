@@ -1,8 +1,13 @@
 import { FreshContext } from "fresh";
 
 import { PRODUCTION } from "@/lib/config.ts";
+import {
+  type AppSession,
+  clearAuthCookies,
+  getAuthSession,
+  persistAuthSession,
+} from "@/lib/auth.ts";
 import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
-import { createSupabaseClient } from "@/lib/supabase.ts";
 import {
   getSpotifyToken,
   refreshSpotifyToken,
@@ -10,10 +15,9 @@ import {
   SpotifyToken,
 } from "@/lib/spotify/token.ts";
 import { redirect } from "@/lib/utils.ts";
-import { Session } from "@supabase/supabase-js";
 
 export type SignedInState = {
-  session: Session;
+  session: AppSession;
 };
 
 export type SignedOutState = {
@@ -23,10 +27,7 @@ export type SignedOutState = {
 export type AuthState = SignedInState | SignedOutState;
 
 const unrestricted = [
-  "/about",
   "/login",
-  "/signup",
-  "/password",
   "/logout",
   "/policies",
 ];
@@ -58,21 +59,16 @@ const authHandler = async (
     return ctx.next();
   }
 
-  const resp = new Response();
-  const supabase = createSupabaseClient(ctx.req, resp);
-
-  const { data: sessionData } = await supabase.auth.getSession();
-
-  ctx.state.session = sessionData.session;
+  ctx.state.session = getAuthSession(ctx.req);
 
   if (!ctx.state.session) {
-    return redirect(
-      "/about",
-    );
+    const resp = redirect("/login");
+    clearAuthCookies(resp.headers);
+    return resp;
   }
 
   const nextResp = await ctx.next();
-  appendHeaders(resp, nextResp);
+  persistAuthSession(nextResp.headers, ctx.url, ctx.state.session);
   return nextResp;
 };
 
@@ -102,7 +98,7 @@ const spotifyTokenHandler = async (
 
   const resp = new Response();
 
-  setSpotifyToken(resp.headers, ctx, ctx.state.spotifyToken);
+  await setSpotifyToken(resp.headers, ctx, ctx.state.spotifyToken);
   const nextResp = await ctx.next();
   appendHeaders(resp, nextResp);
   return nextResp;

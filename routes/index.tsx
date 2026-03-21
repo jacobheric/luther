@@ -1,24 +1,20 @@
+import { type AppSession } from "@/lib/auth.ts";
 import { Search } from "@/islands/search.tsx";
 import { Tracks } from "@/islands/tracks.tsx";
 import { TEST_MODE } from "@/lib/config.ts";
 
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
-import { getSearchHistory } from "@/lib/db/history.ts";
-import { Session } from "@supabase/supabase-js";
+import { getSearchHistory, type SearchHistoryRow } from "@/lib/db/history.ts";
 
-export type History = {
-  id: number;
-  search: string;
-  created_at: string;
-};
+export type History = SearchHistoryRow;
 
 type IndexType = {
   testMode?: boolean;
   history?: History[];
 };
 
-const history = async (test: boolean, session?: Session) => {
+const history = async (test: boolean, session?: AppSession) => {
   if (test || !session) {
     return [];
   }

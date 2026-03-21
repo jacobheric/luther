@@ -1,42 +1,26 @@
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
-import { redirect } from "@/lib/utils.ts";
-import { createSupabaseClient } from "@/lib/supabase.ts";
-import { AuthError } from "@supabase/supabase-js";
-import { assert } from "@std/assert";
+import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 import { LoginForm } from "@/islands/login.tsx";
 
 export const handler = define.handlers({
-  async POST(ctx) {
-    const url = ctx.url.searchParams.get("redirect") ?? "/";
+  GET(ctx) {
+    const redirect = ctx.url.searchParams.get("redirect") ?? "/";
 
-    const resp = redirect(url);
-    const supabase = createSupabaseClient(ctx.req, resp);
-    const form = await ctx.req.formData();
-    const email = form.get("email")?.toString();
-    const password = form.get("password")?.toString();
-
-    assert(email, "email is required");
-    assert(password, "password is required");
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    return page({
+      authUrl: getNeonAuthUrl(),
+      redirect,
     });
-
-    if (error) {
-      console.error("failed to login", error);
-      return page({
-        error,
-      });
-    }
-
-    return resp;
   },
 });
 
 export default function Login(
-  { data }: PageProps<{ error?: AuthError }>,
+  { data }: PageProps<{ authUrl: string; redirect: string }>,
 ) {
-  return <LoginForm error={data?.error?.message} />;
+  return (
+    <LoginForm
+      authUrl={data.authUrl}
+      redirect={data.redirect}
+    />
+  );
 }

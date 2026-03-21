@@ -15,20 +15,9 @@ export const PRODUCTION = Deno.env.get("PRODUCTION") === "true";
 export const BASIC_AUTH_USER = Deno.env.get("BASIC_AUTH_USER");
 export const BASIC_AUTH_PASSWORD = Deno.env.get("BASIC_AUTH_PASSWORD");
 
-export const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-export const SUPABASE_PUBLIC_KEY = Deno.env.get("SUPABASE_PUBLIC_KEY");
-
-export const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get(
-  "SUPABASE_SERVICE_ROLE_KEY",
-);
 export const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
-export const CLOUDFLARE_TURNSTILE_SITE_KEY = Deno.env.get(
-  "CLOUDFLARE_TURNSTILE_SITE_KEY",
-);
-export const CLOUDFLARE_TURNSTILE_SECRET_KEY = Deno.env.get(
-  "CLOUDFLARE_TURNSTILE_SECRET_KEY",
-);
+export const NEON_DATABASE_URL = Deno.env.get("NEON_DATABASE_URL");
+export const NEON_AUTH_URL = Deno.env.get("NEON_AUTH_URL");
 
 export const ME_EMAIL = Deno.env.get("ME_EMAIL");
 export const TEST_MODE = Deno.env.get("TEST_MODE") === "true";

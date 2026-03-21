@@ -1,5 +1,5 @@
-import type { Session } from "@supabase/supabase-js";
 import { createDefine } from "fresh";
+import type { AppSession } from "./auth.ts";
 import { SpotifyToken } from "./spotify/token.ts";
 
 export interface State {
@@ -7,7 +7,7 @@ export interface State {
   description?: string;
   noIndex?: boolean;
   script?: string;
-  session?: Session;
+  session?: AppSession;
   spotifyToken: SpotifyToken;
 }
 

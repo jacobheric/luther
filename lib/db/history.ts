@@ -1,60 +1,62 @@
-import { supabase } from "@/lib/db/supabase.ts";
-import { Session } from "@supabase/supabase-js";
-import { getUser } from "@/lib/db/user.ts";
+import { type AppSession, getSessionUserId } from "@/lib/auth.ts";
+import { sql } from "@/lib/db/sql.ts";
 
-export const saveSearch = async (session: Session, search: string) => {
-  supabase.auth.setSession(session);
-  const user = await supabase.auth.getUser(session.access_token);
+export type SearchHistoryRow = {
+  id: number;
+  search: string;
+  created_at: string;
+};
 
-  const { error } = await supabase
-    .from("searches")
-    .upsert({ user_id: user.data.user?.id, search }, {
-      onConflict: "user_id,search",
-    });
+export const saveSearch = async (session: AppSession, search: string) => {
+  const userId = getSessionUserId(session);
 
-  if (error) {
+  try {
+    await sql`
+      insert into public.searches (user_id, search)
+      values (${userId}::uuid, ${search})
+      on conflict (user_id, search)
+      do update set created_at = now()
+    `;
+  } catch (error) {
     console.error("error saving search", error);
   }
 };
 
 export const getSearchHistory = async (
-  session: Session,
+  session: AppSession,
   limit: number = 20,
 ) => {
-  const user = await getUser(session);
+  const userId = getSessionUserId(session);
 
-  const { data, error } = await supabase
-    .from("searches")
-    .select("*")
-    .eq("user_id", user.data.user?.id)
-    .order("id", { ascending: false })
-    .limit(limit);
-
-  if (error) {
+  try {
+    return await sql<SearchHistoryRow[]>`
+      select id, search, created_at
+      from public.searches
+      where user_id = ${userId}::uuid
+      order by id desc
+      limit ${limit}
+    `;
+  } catch (error) {
     console.error("error fetching search history", error);
     throw error;
   }
-
-  return data;
 };
 
 export const deleteSearchHistory = async (
-  session: Session,
+  session: AppSession,
   id: string,
 ) => {
-  supabase.auth.setSession(session);
-  const user = await supabase.auth.getUser(session.access_token);
+  const userId = getSessionUserId(session);
 
-  const { data, error } = await supabase
-    .from("searches")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.data.user?.id);
-
-  if (error) {
+  try {
+    return await sql<SearchHistoryRow[]>`
+      delete from public.searches
+      where id = ${id}::integer
+        and user_id = ${userId}::uuid
+      returning id, search, created_at
+    `;
+  } catch (error) {
     console.error("error deleting search history", error);
     throw error;
   }
-
-  return data;
 };
