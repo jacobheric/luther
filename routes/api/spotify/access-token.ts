@@ -6,6 +6,7 @@ import {
 } from "@/lib/config.ts";
 
 import { define } from "@/lib/state.ts";
+import { getSpotifyRedirectUri } from "@/lib/spotify/redirect.ts";
 import { setSpotifyToken } from "@/lib/spotify/token.ts";
 
 export const handler = define.handlers({
@@ -27,10 +28,7 @@ export const handler = define.handlers({
     const body = new URLSearchParams();
     body.append("code", code);
     body.append("grant_type", "authorization_code");
-    body.append(
-      "redirect_uri",
-      `${ctx.url.origin}/api/spotify/access-token`,
-    );
+    body.append("redirect_uri", getSpotifyRedirectUri(ctx.url));
 
     const apiResponse = await fetch(SPOTIFY_TOKEN_URL, {
       method: "POST",

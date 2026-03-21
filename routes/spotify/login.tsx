@@ -1,9 +1,10 @@
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
 import { SPOTIFY_CLIENT_ID } from "@/lib/config.ts";
+import { getSpotifyRedirectUri } from "@/lib/spotify/redirect.ts";
 
 export type SpotifyKey = {
-  origin: string;
+  redirectUri: string;
   spotifyClientId?: string;
 };
 
@@ -11,19 +12,19 @@ export const handler = define.handlers({
   GET(ctx) {
     return page({
       spotifyClientId: SPOTIFY_CLIENT_ID,
-      origin: ctx.url.origin,
+      redirectUri: getSpotifyRedirectUri(ctx.url),
     });
   },
   POST(ctx) {
     return page({
       spotifyClientId: SPOTIFY_CLIENT_ID,
-      origin: ctx.url.origin,
+      redirectUri: getSpotifyRedirectUri(ctx.url),
     });
   },
 });
 
 export default function SpotifyLogin(
-  { data: { spotifyClientId, origin } }: PageProps<
+  { data: { spotifyClientId, redirectUri } }: PageProps<
     SpotifyKey
   >,
 ) {
@@ -40,7 +41,7 @@ export default function SpotifyLogin(
         <input
           type="hidden"
           name="redirect_uri"
-          value={`${origin}/api/spotify/access-token`}
+          value={redirectUri}
         />
         <div className="prose dark:prose-invert mb-10">
           Luther needs permission to do a few things for you on Spotify. After
