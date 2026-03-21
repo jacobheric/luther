@@ -21,6 +21,10 @@ export const Nav = (
     };
   }, [dropdownRef]);
 
+  if (pathname === "/login" || pathname === "/logout") {
+    return null;
+  }
+
   return (
     <div
       ref={dropdownRef}
@@ -51,7 +55,7 @@ export const Nav = (
                   Login
                 </a>
               )}
-            {pathname === "/" &&
+            {pathname !== "/logout" && pathname !== "/login" &&
               (
                 <a
                   href="/logout"
@@ -60,12 +64,6 @@ export const Nav = (
                   Logout
                 </a>
               )}
-            <a
-              href="/help"
-              class="block px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
-            >
-              Feedback
-            </a>
           </div>
         )}
     </div>

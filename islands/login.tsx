@@ -60,15 +60,17 @@ export const LoginForm = (
   };
 
   return (
-    <div class="flex flex-col gap-4 justify-start my-12 w-[586px] mx-6">
+    <div class="flex flex-col gap-4 justify-start my-12 mx-6">
       {error && <p class="text-red-500">{error}</p>}
       {clientError && <p class="text-red-500">{clientError}</p>}
       <div class="flex flex-col gap-4">
-        <div class="prose dark:prose-invert">
-          Sign in with the Google account that has been approved for Luther.
-        </div>
-        <button disabled={loading} onClick={login} type="button">
-          {loading ? "Redirecting..." : "Continue with Google"}
+        <button
+          class="cursor-pointer disabled:cursor-not-allowed"
+          disabled={loading}
+          onClick={login}
+          type="button"
+        >
+          {loading ? "Redirecting..." : "Login with Google"}
         </button>
       </div>
     </div>

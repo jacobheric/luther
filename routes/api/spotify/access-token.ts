@@ -15,10 +15,6 @@ export const handler = define.handlers({
       throw new Error("Spotify client id or secret missing");
     }
 
-    if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
-      throw new Error("Spotify client id or secret missing");
-    }
-
     const code = ctx.url.searchParams.get("code");
 
     if (!code) {
@@ -50,7 +46,7 @@ export const handler = define.handlers({
       headers: { Location: "/" },
     });
 
-    setSpotifyToken(response.headers, ctx, {
+    await setSpotifyToken(response.headers, ctx, {
       ...token,
       expires_at: Date.now() + (token.expires_in * 1000),
     });

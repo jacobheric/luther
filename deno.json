@@ -1,15 +1,12 @@
 {
   "lock": false,
   "tasks": {
-    "ok": "deno fmt --check && deno lint && deno check --unstable-cron .",
-
+    "ok": "deno fmt --check && deno lint && deno check .",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "deno serve -A _fresh/server.js",
-
     "openai": "deno run -A ./lib/cli/openai.ts",
     "users": "deno run -A ./scripts/neon_users.ts",
-    "cron": "deno run -A --unstable-cron ./lib/cron.ts",
     "update": "deno run -A -r https://fresh.deno.dev/update ."
   },
   "lint": {
@@ -21,13 +18,15 @@
     }
   },
   "exclude": [
-    "**/_fresh/*"
+    "**/_fresh/*",
+    ".claude/**"
   ],
   "imports": {
     "fresh": "jsr:@fresh/core@^2.2.0",
     "@/": "./",
     "@neondatabase/neon-js": "npm:@neondatabase/neon-js@0.2.0-beta.1",
     "@neondatabase/neon-js/auth": "npm:@neondatabase/neon-js@0.2.0-beta.1/auth",
+    "@neondatabase/postgrest-js": "npm:@neondatabase/postgrest-js@0.1.0-alpha.2",
     "@preact/signals": "npm:@preact/signals@^2.8.2",
     "@std/dotenv": "jsr:@std/dotenv",
     "@std/encoding": "jsr:@std/encoding",

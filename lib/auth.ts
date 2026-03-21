@@ -17,6 +17,8 @@ export type AppSession = {
   user: AppUser;
 };
 
+const JWT_EXPIRY_SKEW_MS = 30_000;
+
 export const getSessionUserId = (session: AppSession) => {
   const userId = session.user?.id;
 
@@ -105,4 +107,37 @@ export const getAuthSession = (req: Request) => {
   } catch {
     return null;
   }
+};
+
+const decodeJwtPayload = (token: string) => {
+  const [, payload] = token.split(".");
+
+  if (!payload) {
+    return null;
+  }
+
+  const normalizedPayload = payload
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(payload.length / 4) * 4, "=");
+
+  try {
+    return JSON.parse(atob(normalizedPayload)) as { exp?: number };
+  } catch {
+    return null;
+  }
+};
+
+export const isAccessTokenExpired = (
+  session: AppSession,
+  now: number = Date.now(),
+) => {
+  const payload = decodeJwtPayload(session.access_token);
+  const expiryMs = payload?.exp ? payload.exp * 1000 : null;
+
+  if (!expiryMs) {
+    return false;
+  }
+
+  return now >= (expiryMs - JWT_EXPIRY_SKEW_MS);
 };

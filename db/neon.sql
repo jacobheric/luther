@@ -15,3 +15,58 @@ create table if not exists public.searches (
 
 create index if not exists searches_user_id_id_idx
   on public.searches (user_id, id desc);
+
+grant usage on schema public to authenticated;
+
+grant select, insert, update on public.users to authenticated;
+
+alter table public.users enable row level security;
+
+drop policy if exists users_select_own on public.users;
+create policy users_select_own on public.users
+  for select
+  to authenticated
+  using (user_id = auth.uid());
+
+drop policy if exists users_insert_own on public.users;
+create policy users_insert_own on public.users
+  for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+drop policy if exists users_update_own on public.users;
+create policy users_update_own on public.users
+  for update
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+grant select, insert, update, delete on public.searches to authenticated;
+grant usage, select on sequence public.searches_id_seq to authenticated;
+
+alter table public.searches enable row level security;
+
+drop policy if exists searches_select_own on public.searches;
+create policy searches_select_own on public.searches
+  for select
+  to authenticated
+  using (user_id = auth.uid());
+
+drop policy if exists searches_insert_own on public.searches;
+create policy searches_insert_own on public.searches
+  for insert
+  to authenticated
+  with check (user_id = auth.uid());
+
+drop policy if exists searches_update_own on public.searches;
+create policy searches_update_own on public.searches
+  for update
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+drop policy if exists searches_delete_own on public.searches;
+create policy searches_delete_own on public.searches
+  for delete
+  to authenticated
+  using (user_id = auth.uid());

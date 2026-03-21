@@ -1,4 +1,8 @@
-import { type AppSession, type AppUser, persistAuthSession } from "@/lib/auth.ts";
+import {
+  type AppSession,
+  type AppUser,
+  persistAuthSession,
+} from "@/lib/auth.ts";
 import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";

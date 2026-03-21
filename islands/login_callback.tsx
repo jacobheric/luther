@@ -29,23 +29,14 @@ export const LoginCallback = (
         return;
       }
 
-      let data: { session?: unknown; user?: unknown } | null = null;
-      let error: { message?: string } | null = null;
+      const { data, error: authError } = await auth.getSession({
+        query: {
+          disableCookieCache: true,
+        },
+      });
 
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const result = await auth.getSession();
-        data = result.data;
-        error = result.error;
-
-        if (data?.session) {
-          break;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 250));
-      }
-
-      if (error || !data?.session) {
-        setError(error?.message ?? "Failed to complete Google login.");
+      if (authError || !data?.session) {
+        setError(authError?.message ?? "Failed to complete Google login.");
         return;
       }
 

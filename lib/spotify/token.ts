@@ -1,10 +1,9 @@
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
-import { getSessionUserId } from "@/lib/auth.ts";
-import { sql } from "@/lib/db/sql.ts";
+import { type AppSession, getSessionUserId } from "@/lib/auth.ts";
+import { createNeonDataApiClient } from "@/lib/db/data_api.ts";
 import { redirect } from "@/lib/utils.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
-import { FreshContext } from "fresh";
-import { AuthState } from "@/routes/_middleware.ts";
+import { Context } from "fresh";
 
 export type SpotifyToken = {
   access_token: string;
@@ -12,11 +11,15 @@ export type SpotifyToken = {
   expires_at: number;
 };
 
+type AuthContextState = {
+  session?: AppSession | null;
+};
+
 export const spotifyLoginRedirect = () => redirect("/spotify/login");
 
-export const setSpotifyToken = async (
+export const setSpotifyToken = async <T extends AuthContextState>(
   headers: Headers,
-  ctx: FreshContext<AuthState>,
+  ctx: Context<T>,
   token: SpotifyToken,
 ) => {
   setCookie(headers, {
@@ -32,17 +35,21 @@ export const setSpotifyToken = async (
   }
 
   const userId = getSessionUserId(ctx.state.session);
+  const client = createNeonDataApiClient(ctx.state.session);
 
   //
   // so we don't prompt them to auth spotify again on a new device
-  try {
-    await sql`
-      insert into public.users (user_id, spotify_token)
-      values (${userId}::uuid, ${JSON.stringify(token)}::jsonb)
-      on conflict (user_id)
-      do update set spotify_token = excluded.spotify_token
-    `;
-  } catch (error) {
+  const { error } = await client
+    .from("users")
+    .upsert(
+      [{
+        user_id: userId,
+        spotify_token: token,
+      }],
+      { onConflict: "user_id" },
+    );
+
+  if (error) {
     console.error("error upserting spotify token to db", error);
   }
 };
@@ -50,7 +57,9 @@ export const setSpotifyToken = async (
 //
 // fetch token from cookie first for speed, then from db for
 // cross device compatibility
-export const getSpotifyToken = async (ctx: FreshContext<AuthState>) => {
+export const getSpotifyToken = async <T extends AuthContextState>(
+  ctx: Context<T>,
+) => {
   const rawToken = getCookies(ctx.req.headers).spotifyToken;
 
   if (rawToken) {
@@ -66,21 +75,21 @@ export const getSpotifyToken = async (ctx: FreshContext<AuthState>) => {
     return null;
   }
   const userId = getSessionUserId(ctx.state.session);
+  const client = createNeonDataApiClient(ctx.state.session);
 
-  try {
-    const [row] = await sql<[{ spotify_token: SpotifyToken | null }?]>`
-      select spotify_token
-      from public.users
-      where user_id = ${userId}::uuid
-      limit 1
-    `;
+  const { data, error } = await client
+    .from("users")
+    .select("spotify_token")
+    .eq("user_id", userId)
+    .maybeSingle();
 
-    if (row?.spotify_token) {
-      return row.spotify_token;
-    }
-  } catch (error) {
+  if (error) {
     console.error("error fetching spotify token from db", error);
     return null;
+  }
+
+  if (data?.spotify_token) {
+    return data.spotify_token as SpotifyToken;
   }
 
   return null;

@@ -1,5 +1,5 @@
 import { type AppSession, getSessionUserId } from "@/lib/auth.ts";
-import { sql } from "@/lib/db/sql.ts";
+import { createNeonDataApiClient } from "@/lib/db/data_api.ts";
 
 export type SearchHistoryRow = {
   id: number;
@@ -9,15 +9,20 @@ export type SearchHistoryRow = {
 
 export const saveSearch = async (session: AppSession, search: string) => {
   const userId = getSessionUserId(session);
+  const client = createNeonDataApiClient(session);
 
-  try {
-    await sql`
-      insert into public.searches (user_id, search)
-      values (${userId}::uuid, ${search})
-      on conflict (user_id, search)
-      do update set created_at = now()
-    `;
-  } catch (error) {
+  const { error } = await client
+    .from("searches")
+    .upsert(
+      [{
+        user_id: userId,
+        search,
+        created_at: new Date().toISOString(),
+      }],
+      { onConflict: "user_id,search" },
+    );
+
+  if (error) {
     console.error("error saving search", error);
   }
 };
@@ -27,19 +32,20 @@ export const getSearchHistory = async (
   limit: number = 20,
 ) => {
   const userId = getSessionUserId(session);
+  const client = createNeonDataApiClient(session);
+  const { data, error } = await client
+    .from("searches")
+    .select("id, search, created_at")
+    .eq("user_id", userId)
+    .order("id", { ascending: false })
+    .limit(limit);
 
-  try {
-    return await sql<SearchHistoryRow[]>`
-      select id, search, created_at
-      from public.searches
-      where user_id = ${userId}::uuid
-      order by id desc
-      limit ${limit}
-    `;
-  } catch (error) {
+  if (error) {
     console.error("error fetching search history", error);
     throw error;
   }
+
+  return (data ?? []) as SearchHistoryRow[];
 };
 
 export const deleteSearchHistory = async (
@@ -47,16 +53,24 @@ export const deleteSearchHistory = async (
   id: string,
 ) => {
   const userId = getSessionUserId(session);
+  const numericId = Number.parseInt(id, 10);
+  const client = createNeonDataApiClient(session);
 
-  try {
-    return await sql<SearchHistoryRow[]>`
-      delete from public.searches
-      where id = ${id}::integer
-        and user_id = ${userId}::uuid
-      returning id, search, created_at
-    `;
-  } catch (error) {
+  if (Number.isNaN(numericId)) {
+    throw new Error("Search history id must be an integer");
+  }
+
+  const { data, error } = await client
+    .from("searches")
+    .delete()
+    .eq("id", numericId)
+    .eq("user_id", userId)
+    .select("id, search, created_at");
+
+  if (error) {
     console.error("error deleting search history", error);
     throw error;
   }
+
+  return (data ?? []) as SearchHistoryRow[];
 };

@@ -1,10 +1,11 @@
-import { FreshContext } from "fresh";
+import { Context } from "fresh";
 
 import { PRODUCTION } from "@/lib/config.ts";
 import {
   type AppSession,
   clearAuthCookies,
   getAuthSession,
+  isAccessTokenExpired,
   persistAuthSession,
 } from "@/lib/auth.ts";
 import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
@@ -45,7 +46,7 @@ const appendHeaders = (oldResponse: Response, newResponse: Response) => {
 };
 
 const authHandler = async (
-  ctx: FreshContext<{ spotifyToken: SpotifyToken } & AuthState>,
+  ctx: Context<{ spotifyToken: SpotifyToken } & AuthState>,
 ) => {
   const url = new URL(ctx.req.url);
 
@@ -61,7 +62,7 @@ const authHandler = async (
 
   ctx.state.session = getAuthSession(ctx.req);
 
-  if (!ctx.state.session) {
+  if (!ctx.state.session || isAccessTokenExpired(ctx.state.session)) {
     const resp = redirect("/login");
     clearAuthCookies(resp.headers);
     return resp;
@@ -73,7 +74,7 @@ const authHandler = async (
 };
 
 const spotifyTokenHandler = async (
-  ctx: FreshContext<{ spotifyToken: SpotifyToken } & AuthState>,
+  ctx: Context<{ spotifyToken: SpotifyToken } & AuthState>,
 ) => {
   const url = new URL(ctx.req.url);
   if (
