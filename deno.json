@@ -6,7 +6,6 @@
     "build": "vite build",
     "preview": "deno serve -A _fresh/server.js",
     "openai": "deno run -A ./lib/cli/openai.ts",
-    "users": "deno run -A ./scripts/neon_users.ts",
     "update": "deno run -A -r https://fresh.deno.dev/update ."
   },
   "lint": {

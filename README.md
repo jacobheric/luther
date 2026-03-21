@@ -25,7 +25,7 @@ PRODUCTION=false
 Run the server:
 
 ```
-deno task start
+deno task dev
 ```
 
 Manage the handful of private-app users from the terminal:
@@ -33,8 +33,5 @@ Manage the handful of private-app users from the terminal:
 ```
 deno task users list
 ```
-
-Neon Auth does not support migrating existing Supabase password hashes, so old
-users need to be recreated manually in the Neon Console.
 
 ![](./luther-screenshot.png)
