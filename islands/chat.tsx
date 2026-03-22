@@ -961,7 +961,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
   };
 
   return (
-    <div className="relative w-full py-1 flex flex-col md:flex-row gap-4 h-[calc(100vh-4.5rem)] min-h-[34rem]">
+    <div className="relative w-full max-w-full overflow-x-clip py-1 flex flex-col md:flex-row gap-2 md:gap-4 h-[calc(100dvh-4.5rem)] md:h-[calc(100vh-4.5rem)] min-h-0 md:min-h-[34rem]">
       {navOverlayOpen && (
         <>
           <button
@@ -1168,7 +1168,13 @@ export const Chat = ({ authUrl }: ChatProps) => {
         </>
       )}
 
-      <div className="fixed top-16 left-0 md:left-1 z-[70] flex flex-col gap-1">
+      <div
+        className="fixed z-[70] left-1 sm:left-2 top-14 sm:top-[3.75rem] flex flex-col gap-1"
+        style={{
+          left: "calc(env(safe-area-inset-left) + 0.25rem)",
+          top: "calc(env(safe-area-inset-top) + 3.5rem + 0.25rem)",
+        }}
+      >
         <Tooltip tooltip="New conversation" className="top-8 left-0">
           <button
             type="button"
@@ -1191,10 +1197,10 @@ export const Chat = ({ authUrl }: ChatProps) => {
         </Tooltip>
       </div>
 
-      <section className="relative z-20 flex-1 min-h-0 flex flex-col">
+      <section className="relative z-20 flex-1 min-h-0 flex flex-col overflow-x-clip">
         <div
           ref={messageListRef}
-          className="scrollbar-none p-2 flex-1 min-h-0 overflow-y-auto flex flex-col gap-4"
+          className="scrollbar-none p-2 flex-1 min-h-0 overflow-y-auto overflow-x-clip flex flex-col gap-4"
           onScroll={updateAutoScrollIntent}
         >
           {loadingThread && (
@@ -1309,13 +1315,13 @@ export const Chat = ({ authUrl }: ChatProps) => {
           ))}
         </div>
 
-        <div className="sticky bottom-0 pt-1 pb-1 px-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col gap-2">
+        <div className="sticky bottom-0 pt-1 pb-1 px-2 max-w-full overflow-x-clip bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col gap-2">
           {error && <div className="text-sm text-red-600">{error}</div>}
           <textarea
             rows={2}
             value={prompt}
             placeholder="What do you want to hear?"
-            className="w-full p-2.5 text-sm resize-none"
+            className="w-full max-w-full p-2.5 text-base sm:text-sm resize-none leading-5"
             onInput={(event) => {
               const target = event.target as HTMLTextAreaElement;
               setPrompt(target.value);

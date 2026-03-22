@@ -8,7 +8,7 @@ export default function Layout(ctx: PageProps) {
   const pathname = new URL(ctx.req.url).pathname;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       <div className="flex flex-col justify-start flex-1">
         <div class="border-b p-4 flex flex-row justify-between h-14">
           <div class="flex items-center">
@@ -28,7 +28,7 @@ export default function Layout(ctx: PageProps) {
             pathname={pathname}
           />
         </div>
-        <div class="flex justify-center sm:w-[90%] px-4 md:max-w-6xl md:mx-auto">
+        <div class="w-full flex justify-center px-2 sm:px-4 sm:w-[90%] md:max-w-6xl md:mx-auto overflow-x-hidden">
           <Partial name="overlay-content">
             <ctx.Component />
           </Partial>
