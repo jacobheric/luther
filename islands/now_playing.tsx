@@ -122,7 +122,7 @@ export const NowPlaying = ({ pathname }: { pathname: string }) => {
           <img
             src={imageUrl}
             alt=""
-            className="hidden sm:block w-6 h-6 rounded object-cover"
+            className="w-6 h-6 rounded object-cover"
           />
         )
         : <Music className="w-4 h-4 shrink-0 opacity-70" />}
@@ -130,12 +130,12 @@ export const NowPlaying = ({ pathname }: { pathname: string }) => {
         href={track.external_urls.spotify}
         target="_blank"
         rel="noreferrer noopener"
-        className="no-underline min-w-0 max-w-[45vw] sm:max-w-[28rem]"
+        className="no-underline min-w-0 max-w-[28rem]"
       >
-        <div className="truncate text-[11px] sm:text-xs font-medium text-gray-700 dark:text-gray-200">
+        <div className="truncate text-xs font-medium text-gray-700 dark:text-gray-200">
           {track.name}
         </div>
-        <div className="hidden sm:block truncate text-[11px] opacity-75">
+        <div className="truncate text-[11px] opacity-75">
           {artistLabel}
         </div>
       </a>

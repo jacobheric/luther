@@ -61,7 +61,7 @@ const nowIso = () => new Date().toISOString();
 const currentPath = () =>
   `${globalThis.location.pathname}${globalThis.location.search}` || "/";
 const loginRedirectPath = () =>
-  `/login?redirect=${encodeURIComponent(currentPath())}`;
+  `/login/callback?redirect=${encodeURIComponent(currentPath())}`;
 const iconButtonClass =
   "cursor-pointer !p-0 h-7 w-7 inline-flex items-center justify-center !border-0 !bg-transparent !rounded-none text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-35 disabled:cursor-not-allowed";
 const iconClass = "w-4 h-4 shrink-0";
@@ -1205,12 +1205,6 @@ export const Chat = ({ authUrl }: ChatProps) => {
         >
           {loadingThread && (
             <div className="text-sm text-gray-500">Loading conversation...</div>
-          )}
-
-          {!messages.length && !loadingThread && (
-            <div className="text-sm text-gray-500">
-              Get yer chat on below 👇
-            </div>
           )}
 
           {messages.map((message) => (

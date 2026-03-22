@@ -66,7 +66,10 @@ const authRequiredResponse = (url: URL) => {
     return response;
   }
 
-  const response = redirect("/login");
+  const redirectTarget = `${url.pathname}${url.search}`;
+  const response = redirect(
+    `/login/callback?redirect=${encodeURIComponent(redirectTarget)}`,
+  );
   clearAuthCookies(response.headers);
   return response;
 };

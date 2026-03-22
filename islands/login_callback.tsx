@@ -22,15 +22,11 @@ export const LoginCallback = (
     didStartRef.current = true;
 
     const completeLogin = async () => {
+      const currentUrl = new URL(globalThis.location.href);
+      const redirect = currentUrl.searchParams.get("redirect") ?? "/";
+      const loginUrl = `/login?redirect=${encodeURIComponent(redirect)}`;
       const auth = createBrowserNeonAuthClient(authUrl);
-      const hasVerifier = new URLSearchParams(globalThis.location.search).has(
-        SESSION_VERIFIER_PARAM,
-      );
-
-      if (!hasVerifier) {
-        setError("Missing Neon session verifier on the OAuth callback URL.");
-        return;
-      }
+      const hasVerifier = currentUrl.searchParams.has(SESSION_VERIFIER_PARAM);
 
       const { data, error: authError } = await auth.getSession({
         query: {
@@ -38,7 +34,12 @@ export const LoginCallback = (
         },
       });
 
-      if (authError || !data?.session) {
+      if (authError || !data?.session || !data?.user) {
+        if (!hasVerifier) {
+          globalThis.location.href = loginUrl;
+          return;
+        }
+
         setError(authError?.message ?? "Failed to complete Google login.");
         return;
       }
