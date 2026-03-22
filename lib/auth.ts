@@ -1,6 +1,5 @@
 import { deleteCookie, getCookies, setCookie } from "@std/http/cookie";
 import { createAuthClient } from "@neondatabase/neon-js/auth";
-import { SupabaseAuthAdapter } from "@neondatabase/neon-js/auth/vanilla/adapters";
 import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 
 const ACCESS_TOKEN_COOKIE = "luther-access-token";
@@ -193,19 +192,20 @@ const toRefreshedSession = (
 };
 
 export const refreshAuthSession = async (session: AppSession) => {
-  if (!session.refresh_token) {
-    return null;
-  }
-
   try {
-    const auth = createAuthClient(getNeonAuthUrl(), {
-      adapter: SupabaseAuthAdapter(),
-    });
-    const refreshed = await auth.refreshSession({
-      refresh_token: session.refresh_token,
+    const auth = createAuthClient(getNeonAuthUrl());
+    const refreshed = await auth.getSession({
+      query: {
+        disableCookieCache: true,
+      },
+      fetchOptions: {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      },
     });
 
-    if (refreshed.error) {
+    if (refreshed.error || !refreshed.data) {
       return null;
     }
 

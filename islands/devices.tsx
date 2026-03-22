@@ -1,39 +1,27 @@
-import { useEffect, useState } from "preact/hooks";
 import { type Device } from "@spotify/web-api-ts-sdk";
 import Reload from "tabler-icons/tsx/reload.tsx";
 import InfoCircle from "tabler-icons/tsx/info-circle.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
 
 export const Devices = (
-  { tracks, devices, setDevices }: {
+  {
+    tracks,
+    devices,
+    loading,
+    devicesLoaded,
+    onRefresh,
+    selectedDeviceId,
+    onSelectDevice,
+  }: {
     tracks: boolean;
     devices: Device[];
-    setDevices: (devices: Device[]) => void;
+    loading: boolean;
+    devicesLoaded: boolean;
+    onRefresh: () => Promise<unknown>;
+    selectedDeviceId: string;
+    onSelectDevice: (deviceId: string) => void;
   },
 ) => {
-  const [devicesLoaded, setDevicesLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const getDevices = async () => {
-    const response = await fetch(`/api/spotify/devices`);
-    if (!response.ok) {
-      setDevices([]);
-      setDevicesLoaded(true);
-      setLoading(false);
-      return;
-    }
-
-    setDevices(JSON.parse(await response.text()));
-    setDevicesLoaded(true);
-    setTimeout(() => setLoading(false), 1000);
-  };
-
-  useEffect(() => {
-    if (tracks) {
-      getDevices();
-    }
-  }, [tracks]);
-
   if (!tracks) {
     return null;
   }
@@ -43,10 +31,15 @@ export const Devices = (
       <select
         name="device"
         id="device"
-        disabled={!devicesLoaded || devices?.length === 0}
+        value={selectedDeviceId}
+        disabled={!devicesLoaded || loading || devices?.length === 0}
         className="flex-1 p-2 text-sm !border-0"
+        onChange={(event) =>
+          onSelectDevice((event.target as HTMLSelectElement).value)}
       >
-        {devices?.length === 0 && <option value="">No device found</option>}
+        {!devicesLoaded && <option value="">Loading devices...</option>}
+        {devicesLoaded && devices?.length === 0 &&
+          <option value="">No device found</option>}
         {devices.map(({ id, name }: Device) => (
           <option key={id || name} className="px-2 mx-2" value={id || ""}>
             {name}
@@ -58,10 +51,7 @@ export const Devices = (
         <button
           type="button"
           className="cursor-pointer !p-0 h-7 w-7 inline-flex items-center justify-center !border-0 !bg-transparent !rounded-none text-gray-500 hover:text-gray-900 dark:hover:text-white"
-          onClick={() => {
-            setLoading(true);
-            void getDevices();
-          }}
+          onClick={() => void onRefresh()}
         >
           <Reload
             className={`w-4 h-4 shrink-0 ${loading ? "animate-spin" : ""}`}

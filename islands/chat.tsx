@@ -170,6 +170,9 @@ export const Chat = ({ authUrl }: ChatProps) => {
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageView[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [devicesLoaded, setDevicesLoaded] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loadingThread, setLoadingThread] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -207,6 +210,17 @@ export const Chat = ({ authUrl }: ChatProps) => {
       ),
     [messages],
   );
+  const hasSelectedDevice = useMemo(
+    () => devices.some((device) => device.id === selectedDeviceId),
+    [devices, selectedDeviceId],
+  );
+  const deviceQuickButtonClass = `${iconButtonClass} ${
+    hasSelectedDevice
+      ? "!text-emerald-600 hover:!text-emerald-500 dark:!text-emerald-400 dark:hover:!text-emerald-300"
+      : devicesLoaded
+      ? "!text-rose-600 hover:!text-rose-500 dark:!text-rose-400 dark:hover:!text-rose-300"
+      : ""
+  }`;
 
   const closeNavOverlay = () => setNavOverlayOpen(false);
   const updateAutoScrollIntent = () => {
@@ -364,6 +378,42 @@ export const Chat = ({ authUrl }: ChatProps) => {
     await fetchMessages(threadId);
   };
 
+  const pickPreferredDeviceId = (candidateDevices: Device[]) =>
+    candidateDevices.find((device) => Boolean(device.is_active && device.id))
+      ?.id ??
+      candidateDevices.find((device) => Boolean(device.id))?.id ??
+      "";
+
+  const fetchDevices = async (silent = false): Promise<Device[]> => {
+    if (loadingDevices) {
+      return devices;
+    }
+
+    setLoadingDevices(true);
+
+    try {
+      const response = await fetchWithSessionRecovery("/api/spotify/devices");
+      requireOk(response, "failed to load devices");
+
+      const nextDevices = await response.json() as Device[];
+      setDevices(nextDevices);
+      setDevicesLoaded(true);
+      return nextDevices;
+    } catch (error) {
+      console.error("failed to fetch devices", error);
+      setDevices([]);
+      setDevicesLoaded(true);
+
+      if (!silent && !authRedirecting.current) {
+        setError("Could not load Spotify devices.");
+      }
+
+      return [];
+    } finally {
+      setLoadingDevices(false);
+    }
+  };
+
   const fetchPlaylists = async (force = false) => {
     if (loadingPlaylists) {
       return;
@@ -451,6 +501,14 @@ export const Chat = ({ authUrl }: ChatProps) => {
   }, [navOverlayOpen, navPanel]);
 
   useEffect(() => {
+    if (!hasSongs || devicesLoaded || loadingDevices) {
+      return;
+    }
+
+    void fetchDevices(true);
+  }, [hasSongs, devicesLoaded, loadingDevices]);
+
+  useEffect(() => {
     const metrics = toMessageMetrics(messages, activeThreadId);
     const previousMetrics = previousMessageMetricsRef.current;
     previousMessageMetricsRef.current = metrics;
@@ -474,6 +532,22 @@ export const Chat = ({ authUrl }: ChatProps) => {
     scrollMessageListToBottom(isNewMessage ? "smooth" : "auto");
   }, [messages, activeThreadId]);
 
+  useEffect(() => {
+    if (!devices.length) {
+      setSelectedDeviceId("");
+      return;
+    }
+
+    if (
+      selectedDeviceId &&
+      devices.some((device) => device.id === selectedDeviceId)
+    ) {
+      return;
+    }
+
+    setSelectedDeviceId(pickPreferredDeviceId(devices));
+  }, [devices, selectedDeviceId]);
+
   const resetForNewChat = () => {
     closeNavOverlay();
     setActiveThreadId(null);
@@ -485,6 +559,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
   const openDevicesPanel = () => {
     setNavPanel("devices");
     setNavOverlayOpen(true);
+    void fetchDevices();
   };
 
   const remixFromPlaylist = async (playlist: PlaylistSummary) => {
@@ -524,10 +599,6 @@ export const Chat = ({ authUrl }: ChatProps) => {
     }
   };
 
-  const getSelectedDevice = () =>
-    (document.getElementById("device") as HTMLSelectElement | null)?.value ??
-      "";
-
   const withAction = async (key: string, action: () => Promise<void>) => {
     setActionKey(key);
     setError(null);
@@ -563,14 +634,28 @@ export const Chat = ({ authUrl }: ChatProps) => {
     },
   ) => {
     if (endpoint !== "/api/spotify/playlist") {
-      const device = getSelectedDevice();
+      let deviceId = selectedDeviceId;
 
-      if (!device) {
-        throw new Error("no spotify device selected");
+      if (!deviceId || !devices.some((device) => device.id === deviceId)) {
+        const refreshedDevices = await fetchDevices(true);
+        deviceId = pickPreferredDeviceId(refreshedDevices);
+
+        if (deviceId) {
+          setSelectedDeviceId(deviceId);
+        }
+      }
+
+      if (!deviceId) {
+        setError(
+          "No Spotify device available. Open Spotify on your phone/computer and pick it in Devices.",
+        );
+        setNavPanel("devices");
+        setNavOverlayOpen(true);
+        return;
       }
 
       const formData = new FormData();
-      formData.append("device", device);
+      formData.append("device", deviceId);
       uris.forEach((uri) => formData.append("trackURI", uri));
 
       const response = await fetchWithSessionRecovery(endpoint, {
@@ -962,7 +1047,13 @@ export const Chat = ({ authUrl }: ChatProps) => {
                       <Devices
                         tracks={hasSongs}
                         devices={devices}
-                        setDevices={setDevices}
+                        loading={loadingDevices}
+                        devicesLoaded={devicesLoaded}
+                        onRefresh={async () => {
+                          await fetchDevices();
+                        }}
+                        selectedDeviceId={selectedDeviceId}
+                        onSelectDevice={setSelectedDeviceId}
                       />
                     </div>
                   )
@@ -1077,7 +1168,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
         </>
       )}
 
-      <div className="fixed top-16 left-1 z-[70] flex flex-col gap-1">
+      <div className="fixed top-16 left-0 md:left-1 z-[70] flex flex-col gap-1">
         <Tooltip tooltip="New conversation" className="top-8 left-0">
           <button
             type="button"
@@ -1091,7 +1182,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
         <Tooltip tooltip="Devices" className="top-8 left-0">
           <button
             type="button"
-            className={iconButtonClass}
+            className={deviceQuickButtonClass}
             onClick={openDevicesPanel}
             aria-label="Open devices"
           >
