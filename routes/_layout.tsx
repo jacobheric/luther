@@ -1,6 +1,7 @@
 import { type PageProps } from "fresh";
 import { Partial } from "fresh/runtime";
 import { Nav } from "@/islands/nav.tsx";
+import { NowPlaying } from "@/islands/now_playing.tsx";
 import { Logo } from "@/components/logo.tsx";
 
 export default function Layout(ctx: PageProps) {
@@ -10,19 +11,17 @@ export default function Layout(ctx: PageProps) {
     <div className="flex flex-col min-h-screen">
       <div className="flex flex-col justify-start flex-1">
         <div class="border-b p-4 flex flex-row justify-between h-14">
-          <div class="font-bold tracking-widest">
+          <div class="flex items-center">
             <a
-              class="no-underline flex flex-row justify-start items-center gap-1"
+              class="no-underline flex items-center"
               href="/"
+              aria-label="Luther Home"
             >
-              <div className="flex flex-row justify-start items-center">
-                <Logo className="w-4 fill-black dark:fill-white mr-px" />isten
-              </div>
-              <div>to</div>
-              <div className="flex flex-row justify-start items-center">
-                <Logo className="w-4 fill-black dark:fill-white mr-px" />uther
-              </div>
+              <Logo className="w-4 h-4 fill-black dark:fill-white" />
             </a>
+          </div>
+          <div className="flex-1 min-w-0 px-2 flex items-center justify-center">
+            <NowPlaying pathname={pathname} />
           </div>
 
           <Nav

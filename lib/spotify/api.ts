@@ -19,6 +19,19 @@ export type RemixSeedSong = {
   album: string;
 };
 
+export type NowPlayingTrack = Pick<Track, "name" | "uri" | "external_urls"> & {
+  artists: { name: string }[];
+  album: Pick<Track["album"], "name" | "images">;
+};
+
+export type NowPlaying = {
+  isPlaying: boolean;
+  progressMs: number | null;
+  durationMs: number | null;
+  track: NowPlayingTrack | null;
+  isSaved: boolean;
+};
+
 type SpotifyAccessToken = {
   access_token: string;
 };
@@ -329,6 +342,203 @@ export const getPlaylistRemixSongs = async (
   }
 
   return songs;
+};
+
+export const checkLibraryContains = async (
+  token: SpotifyToken,
+  uri: string,
+) => {
+  if (!uri) {
+    return false;
+  }
+
+  const response = await spotifyFetch(
+    `https://api.spotify.com/v1/me/library/contains?uris=${
+      encodeURIComponent(uri)
+    }`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    console.error("error checking library items", response);
+    throw new Error("There was an error checking your saved items!");
+  }
+
+  const payload = await response.json();
+  return Array.isArray(payload) ? Boolean(payload[0]) : false;
+};
+
+export const saveItemToLibrary = async (
+  token: SpotifyToken,
+  uri: string,
+) => {
+  if (!uri) {
+    throw new Error("spotify uri is required");
+  }
+
+  const response = await spotifyFetch(
+    `https://api.spotify.com/v1/me/library?uris=${encodeURIComponent(uri)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    console.error("error saving item to library", {
+      status: response.status,
+      details,
+    });
+
+    if (response.status === 403) {
+      throw new Error(
+        "SPOTIFY_SCOPE_FORBIDDEN: Reauthorize Spotify to grant library write scope.",
+      );
+    }
+
+    throw new Error("There was an error saving your item to library!");
+  }
+};
+
+const toNowPlayingTrack = (value: unknown): NowPlayingTrack | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const maybeTrack = value as {
+    type?: unknown;
+    name?: unknown;
+    uri?: unknown;
+    external_urls?: { spotify?: unknown };
+    artists?: Array<{ name?: unknown }>;
+    album?: {
+      name?: unknown;
+      images?: unknown;
+    };
+  };
+
+  const uri = typeof maybeTrack.uri === "string" ? maybeTrack.uri : "";
+  const name = typeof maybeTrack.name === "string" ? maybeTrack.name : "";
+  const spotifyUrl = typeof maybeTrack.external_urls?.spotify === "string"
+    ? maybeTrack.external_urls.spotify
+    : "";
+  const albumName = typeof maybeTrack.album?.name === "string"
+    ? maybeTrack.album.name
+    : "";
+  const images = Array.isArray(maybeTrack.album?.images)
+    ? maybeTrack.album.images
+    : [];
+
+  if (
+    maybeTrack.type !== "track" || !uri || !name || !spotifyUrl || !albumName
+  ) {
+    return null;
+  }
+
+  const artists = Array.isArray(maybeTrack.artists)
+    ? maybeTrack.artists
+      .map((artist) => ({
+        name: typeof artist?.name === "string" ? artist.name : "",
+      }))
+      .filter((artist) => Boolean(artist.name))
+    : [];
+
+  if (!artists.length) {
+    return null;
+  }
+
+  return {
+    uri,
+    name,
+    external_urls: { spotify: spotifyUrl },
+    artists,
+    album: {
+      name: albumName,
+      images: images as NowPlayingTrack["album"]["images"],
+    },
+  };
+};
+
+export const getNowPlaying = async (
+  token: SpotifyToken,
+): Promise<NowPlaying> => {
+  const response = await spotifyFetch(
+    `https://api.spotify.com/v1/me/player/currently-playing?market=${DEFAULT_MARKET}`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token.access_token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (response.status === 204) {
+    return {
+      isPlaying: false,
+      progressMs: null,
+      durationMs: null,
+      track: null,
+      isSaved: false,
+    };
+  }
+
+  if (!response.ok) {
+    console.error("error getting currently playing track", response);
+    throw new Error("There was an error getting your currently playing track!");
+  }
+
+  const payload = await response.json() as {
+    is_playing?: unknown;
+    progress_ms?: unknown;
+    item?: unknown;
+  };
+  const track = toNowPlayingTrack(payload.item);
+  const isPlaying = Boolean(payload.is_playing);
+  const progressMs = typeof payload.progress_ms === "number"
+    ? payload.progress_ms
+    : null;
+  const durationMs = (payload.item && typeof payload.item === "object" &&
+      typeof (payload.item as { duration_ms?: unknown }).duration_ms ===
+        "number")
+    ? (payload.item as { duration_ms: number }).duration_ms
+    : null;
+
+  if (!track) {
+    return {
+      isPlaying,
+      progressMs,
+      durationMs,
+      track: null,
+      isSaved: false,
+    };
+  }
+
+  let isSaved = false;
+
+  try {
+    isSaved = await checkLibraryContains(token, track.uri);
+  } catch {
+    isSaved = false;
+  }
+
+  return {
+    isPlaying,
+    progressMs,
+    durationMs,
+    track,
+    isSaved,
+  };
 };
 
 export const queue = async (
