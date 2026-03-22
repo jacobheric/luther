@@ -1,5 +1,5 @@
 import { createBrowserNeonAuthClient } from "@/lib/auth_client.ts";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 const SESSION_VERIFIER_PARAM = "neon_auth_session_verifier";
 
@@ -12,11 +12,14 @@ export const LoginCallback = (
   { authUrl, error: initialError }: CallbackState,
 ) => {
   const [error, setError] = useState(initialError);
+  const didStartRef = useRef(false);
 
   useEffect(() => {
-    if (initialError) {
+    if (initialError || didStartRef.current) {
       return;
     }
+
+    didStartRef.current = true;
 
     const completeLogin = async () => {
       const auth = createBrowserNeonAuthClient(authUrl);

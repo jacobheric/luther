@@ -10,58 +10,28 @@ import type {
 
 const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
-const DEFAULT_SONGS_PER_TURN = 10;
-const MAX_SONGS_PER_TURN = 20;
-const MAX_CANDIDATE_SONGS_PER_TURN = 40;
+export const DEFAULT_MIN_SONGS_PER_TURN = 20;
+const MAX_TOOL_SONGS_PER_TURN = 60;
 const SPOTIFY_LOOKUP_CONCURRENCY = 5;
 
-const buildSystemPrompt = (
-  requestedSongCount: number,
-  candidateSongCount: number,
-) =>
+const buildSystemPrompt = () =>
   `You are Luther, a conversational AI DJ.
 
 Respond conversationally in plain text in every turn.
 When the user asks for songs, playlists, recommendations, more tracks, similar vibes,
 or anything that implies track suggestions, you MUST call recommend_songs exactly once
-with up to ${candidateSongCount} songs.
+with a list of songs that matches the user's request.
 Do not output raw numbered song lists in text without also calling recommend_songs.
-When recommending songs, target at least ${requestedSongCount} songs when possible.
+Unless the user explicitly asks for a specific number of songs, include at least ${DEFAULT_MIN_SONGS_PER_TURN} songs.
 If recommendations are not relevant, do not call recommend_songs.
 
 Only include songs that are likely to exist on Spotify.
+Prefer studio versions by default. Avoid live recordings unless the user explicitly asks for live versions.
 Favor specific tracks and artists over vague categories.`;
 
 const TOOL_RESPONSE_PROMPT =
   `Write a brief conversational response (2-4 sentences) about this recommendation set.
 Explain the vibe and why these tracks fit the request. Do not output a numbered song list.`;
-
-const clampSongCount = (value: number) =>
-  Math.max(1, Math.min(MAX_SONGS_PER_TURN, value));
-
-const toRequestedSongCount = (message: string) => {
-  const exactCountMatch = message.match(
-    /\b(\d{1,2})\s+(?:more\s+)?(?:songs?|tracks?)\b/i,
-  );
-
-  if (exactCountMatch) {
-    return clampSongCount(Number.parseInt(exactCountMatch[1], 10));
-  }
-
-  const moreCountMatch = message.match(/\b(\d{1,2})\s+more\b/i);
-
-  if (moreCountMatch) {
-    return clampSongCount(Number.parseInt(moreCountMatch[1], 10));
-  }
-
-  return DEFAULT_SONGS_PER_TURN;
-};
-
-const toCandidateSongCount = (requestedSongCount: number) =>
-  Math.min(
-    MAX_CANDIDATE_SONGS_PER_TURN,
-    Math.max(requestedSongCount * 2, requestedSongCount + 8),
-  );
 
 const toNormalizedKey = (song: SongRecommendation) =>
   `${song.song.trim().toLowerCase()}::${song.artist.trim().toLowerCase()}`;
@@ -161,7 +131,7 @@ const ackRecommendationToolCalls = async (
     output: JSON.stringify({
       songs: toRecommendationsFromArgs(call.arguments).slice(
         0,
-        MAX_CANDIDATE_SONGS_PER_TURN,
+        MAX_TOOL_SONGS_PER_TURN,
       ),
     }),
   }));
@@ -235,7 +205,7 @@ const mapWithConcurrency = async <T, R>(
 export const resolveRecommendedSongs = async (
   recommendations: SongRecommendation[],
   {
-    maxResults = DEFAULT_SONGS_PER_TURN,
+    maxResults = DEFAULT_MIN_SONGS_PER_TURN,
     excludeUris = [],
   }: {
     maxResults?: number;
@@ -291,28 +261,25 @@ export const streamAssistantTurn = async (
     throw new Error("OPENAI_API_KEY must be set");
   }
 
-  const requestedSongCount = toRequestedSongCount(message);
-  const candidateSongCount = toCandidateSongCount(requestedSongCount);
-
   const stream = openai.responses.stream({
     model: "gpt-5.4-mini",
     store: true,
-    instructions: buildSystemPrompt(requestedSongCount, candidateSongCount),
+    instructions: buildSystemPrompt(),
     input: message,
     tools: [
       ...(web ? [{ type: "web_search_preview" as const }] : []),
       {
         type: "function" as const,
         name: "recommend_songs",
-        description:
-          `Return up to ${candidateSongCount} recommended songs relevant to the conversation.`,
+        description: `Return recommended songs relevant to the conversation.
+If the user did not ask for a specific count, include at least ${DEFAULT_MIN_SONGS_PER_TURN} songs.`,
         strict: true,
         parameters: {
           type: "object",
           properties: {
             songs: {
               type: "array",
-              maxItems: candidateSongCount,
+              maxItems: MAX_TOOL_SONGS_PER_TURN,
               items: {
                 type: "object",
                 properties: {
@@ -354,10 +321,10 @@ export const streamAssistantTurn = async (
   const initialText = assistantText || response.output_text || "";
   const toolRecommendations = extractRecommendations(
     response,
-    candidateSongCount,
+    MAX_TOOL_SONGS_PER_TURN,
   );
   const fallbackRecommendations = toolRecommendations.length === 0
-    ? extractRecommendationsFromText(initialText, candidateSongCount)
+    ? extractRecommendationsFromText(initialText, MAX_TOOL_SONGS_PER_TURN)
     : [];
   const recommendations = toolRecommendations.length
     ? toolRecommendations
@@ -371,7 +338,6 @@ export const streamAssistantTurn = async (
   return {
     assistantText: finalText,
     recommendations,
-    requestedSongCount,
     responseId: continuation.id,
     conversationId: continuation.conversation?.id ??
       response.conversation?.id ?? conversationId ?? null,

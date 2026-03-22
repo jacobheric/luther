@@ -22,7 +22,7 @@ const Tooltip = (
         {children}
         {isVisible && (
           <div
-            class={`z-10 absolute rounded border bg-white dark:bg-gray-900 transition-opacity duration-300 p-2 shadow-md flex items-center justify-center whitespace-nowrap ${className}`}
+            class={`z-[9999] absolute rounded border bg-white dark:bg-gray-900 transition-opacity duration-300 p-2 shadow-md flex items-center justify-center whitespace-nowrap ${className}`}
           >
             {tooltip}
           </div>

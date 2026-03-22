@@ -13,6 +13,12 @@ export type TrackLite = Pick<Track, "name" | "uri" | "external_urls"> & {
   artists: { name: string }[];
 };
 
+export type RemixSeedSong = {
+  name: string;
+  artist: string;
+  album: string;
+};
+
 type SpotifyAccessToken = {
   access_token: string;
 };
@@ -20,6 +26,7 @@ type SpotifyAccessToken = {
 const DEFAULT_MARKET = "US";
 const DEFAULT_RETRIES = 2;
 const SEARCH_LIMIT = 5;
+const MAX_PLAYLIST_REMIX_SONGS = 80;
 
 const pareTrack = (track: Track): TrackLite => {
   const {
@@ -86,16 +93,30 @@ const normalize = (value: string | undefined | null) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const LIVE_VERSION_PATTERN = /\blive\b|\bunplugged\b|\bconcert\b/;
+
+const includesLiveMarker = (value: string | undefined | null) =>
+  LIVE_VERSION_PATTERN.test(normalize(value));
+
+const isLiveRequest = (
+  { song, album }: { song: string; album?: string },
+) => includesLiveMarker(song) || includesLiveMarker(album);
+
+const isLikelyLiveTrack = (track: Track) =>
+  includesLiveMarker(track.name) || includesLiveMarker(track.album?.name);
+
 const matchScore = (
   track: Track,
   {
     song,
     artist,
     album,
+    prefersLiveVersion,
   }: {
     song: string;
     artist: string;
     album?: string;
+    prefersLiveVersion: boolean;
   },
 ) => {
   const normalizedSong = normalize(song);
@@ -122,8 +143,9 @@ const matchScore = (
     : albumName.includes(normalizedAlbum) || normalizedAlbum.includes(albumName)
     ? 1
     : 0;
+  const livePenalty = !prefersLiveVersion && isLikelyLiveTrack(track) ? -4 : 0;
 
-  return songScore + artistScore + albumScore;
+  return songScore + artistScore + albumScore + livePenalty;
 };
 
 export const searchSong = async (
@@ -178,10 +200,11 @@ export const searchSong = async (
     return null;
   }
 
+  const prefersLiveVersion = isLiveRequest({ song, album });
   const ranked = [...tracks]
     .map((track) => ({
       track,
-      score: matchScore(track, { song, artist, album }),
+      score: matchScore(track, { song, artist, album, prefersLiveVersion }),
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -231,6 +254,81 @@ export const getPlaylists = async (
 
   const { items } = await response.json();
   return items || [];
+};
+
+export const getPlaylistRemixSongs = async (
+  token: SpotifyToken,
+  playlistId: string,
+  maxSongs: number = MAX_PLAYLIST_REMIX_SONGS,
+): Promise<RemixSeedSong[]> => {
+  if (!playlistId) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const songs: RemixSeedSong[] = [];
+  let next:
+    | string
+    | null = `https://api.spotify.com/v1/playlists/${
+      encodeURIComponent(playlistId)
+    }/tracks?limit=100&market=${DEFAULT_MARKET}`;
+
+  while (next && songs.length < maxSongs) {
+    const response = await spotifyFetch(
+      next,
+      {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token.access_token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      console.error("error getting playlist tracks", response);
+      throw new Error("There was an error getting playlist tracks!");
+    }
+
+    const result = await response.json() as {
+      items?: Array<{ track?: Track | null }>;
+      next?: string | null;
+    };
+    const items = Array.isArray(result.items) ? result.items : [];
+
+    for (const item of items) {
+      const track = item.track;
+
+      if (!track || track.type !== "track") {
+        continue;
+      }
+
+      const name = track.name?.trim() ?? "";
+      const artist = track.artists?.[0]?.name?.trim() ?? "";
+      const album = track.album?.name?.trim() ?? "";
+
+      if (!name || !artist || !album) {
+        continue;
+      }
+
+      const key = `${normalize(name)}::${normalize(artist)}`;
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      songs.push({ name, artist, album });
+
+      if (songs.length >= maxSongs) {
+        break;
+      }
+    }
+
+    next = result.next ?? null;
+  }
+
+  return songs;
 };
 
 export const queue = async (

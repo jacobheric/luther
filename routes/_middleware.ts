@@ -7,6 +7,7 @@ import {
   getAuthSession,
   isAccessTokenExpired,
   persistAuthSession,
+  refreshAuthSession,
 } from "@/lib/auth.ts";
 import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
 import {
@@ -41,6 +42,19 @@ const unrestrictedSpotify = [
 
 const isApiRoute = (pathname: string) => pathname.startsWith("/api/");
 
+const isLocalLoopbackAlias = (hostname: string) =>
+  hostname === "localhost" || hostname === "::1" || hostname === "[::1]";
+
+const toCanonicalLoopbackUrl = (url: URL) => {
+  if (IS_DEPLOYED || !isLocalLoopbackAlias(url.hostname)) {
+    return null;
+  }
+
+  const canonical = new URL(url.toString());
+  canonical.hostname = "127.0.0.1";
+  return canonical;
+};
+
 const authRequiredResponse = (url: URL) => {
   if (isApiRoute(url.pathname)) {
     const response = Response.json(
@@ -74,6 +88,11 @@ const authHandler = async (
   ctx: Context<{ spotifyToken: SpotifyToken } & AuthState>,
 ) => {
   const url = new URL(ctx.req.url);
+  const canonicalLoopbackUrl = toCanonicalLoopbackUrl(url);
+
+  if (canonicalLoopbackUrl) {
+    return redirect(canonicalLoopbackUrl.toString());
+  }
 
   if (!PRODUCTION && !IS_DEPLOYED) {
     return ctx.next();
@@ -87,8 +106,18 @@ const authHandler = async (
 
   ctx.state.session = getAuthSession(ctx.req);
 
-  if (!ctx.state.session || isAccessTokenExpired(ctx.state.session)) {
+  if (!ctx.state.session) {
     return authRequiredResponse(url);
+  }
+
+  if (isAccessTokenExpired(ctx.state.session)) {
+    const refreshedSession = await refreshAuthSession(ctx.state.session);
+
+    if (!refreshedSession || isAccessTokenExpired(refreshedSession)) {
+      return authRequiredResponse(url);
+    }
+
+    ctx.state.session = refreshedSession;
   }
 
   const nextResp = await ctx.next();

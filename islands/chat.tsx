@@ -1,6 +1,7 @@
 import { Modal } from "@/islands/modal.tsx";
 import { PlaylistModal } from "@/islands/playlist.tsx";
 import { Devices } from "@/islands/devices.tsx";
+import Tooltip from "@/islands/tooltip.tsx";
 import { createBrowserNeonAuthClient } from "@/lib/auth_client.ts";
 import type {
   ChatMessage,
@@ -14,9 +15,43 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { JSX } from "preact";
 import Trash from "tabler-icons/tsx/trash.tsx";
 import Plus from "tabler-icons/tsx/plus.tsx";
+import PlayerPlay from "tabler-icons/tsx/player-play.tsx";
+import PlayerTrackNext from "tabler-icons/tsx/player-track-next.tsx";
+import PlaylistAdd from "tabler-icons/tsx/playlist-add.tsx";
+import BrandSpotify from "tabler-icons/tsx/brand-spotify.tsx";
+import ArrowsShuffle from "tabler-icons/tsx/arrows-shuffle.tsx";
+import Messages from "tabler-icons/tsx/messages.tsx";
+import DeviceSpeaker from "tabler-icons/tsx/device-speaker.tsx";
+import X from "tabler-icons/tsx/x.tsx";
+import Edit from "tabler-icons/tsx/edit.tsx";
+import Playlist from "tabler-icons/tsx/playlist.tsx";
 
 type MessageView = Omit<ChatMessage, "id"> & {
   id: number | string;
+};
+
+type RemixSeedSong = {
+  name: string;
+  artist: string;
+  album: string;
+};
+
+type PlaylistSummary = {
+  id: string;
+  name: string;
+  tracksTotal: number;
+};
+
+type PlaylistRemixSource = {
+  playlistName: string;
+  songs: RemixSeedSong[];
+};
+
+type MessageMetrics = {
+  count: number;
+  contentChars: number;
+  songCards: number;
+  threadId: number | null;
 };
 
 const PLAYLIST_MODAL_ID = "chat-add-to-playlist";
@@ -27,6 +62,9 @@ const currentPath = () =>
   `${globalThis.location.pathname}${globalThis.location.search}` || "/";
 const loginRedirectPath = () =>
   `/login?redirect=${encodeURIComponent(currentPath())}`;
+const iconButtonClass =
+  "cursor-pointer !p-0 h-7 w-7 inline-flex items-center justify-center !border-0 !bg-transparent !rounded-none text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-35 disabled:cursor-not-allowed";
+const iconClass = "w-4 h-4 shrink-0";
 
 const parseNdjson = async (
   response: Response,
@@ -79,9 +117,53 @@ const formatTimestamp = (iso: string) =>
     minute: "2-digit",
   });
 
+const toMessageMetrics = (
+  messages: MessageView[],
+  threadId: number | null,
+): MessageMetrics => ({
+  count: messages.length,
+  contentChars: messages.reduce(
+    (total, message) => total + message.content.length,
+    0,
+  ),
+  songCards: messages.reduce(
+    (total, message) => total + (message.song_cards?.length ?? 0),
+    0,
+  ),
+  threadId,
+});
+
+const toPlaylistSummary = (value: unknown): PlaylistSummary | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const playlist = value as {
+    id?: unknown;
+    name?: unknown;
+    tracks?: { total?: unknown };
+  };
+  const id = typeof playlist.id === "string" ? playlist.id.trim() : "";
+  const name = typeof playlist.name === "string" ? playlist.name.trim() : "";
+
+  if (!id || !name) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    tracksTotal: typeof playlist.tracks?.total === "number"
+      ? playlist.tracks.total
+      : 0,
+  };
+};
+
 type ChatProps = {
   authUrl: string;
 };
+
+type NavPanel = "threads" | "devices" | "playlists";
 
 export const Chat = ({ authUrl }: ChatProps) => {
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -95,11 +177,28 @@ export const Chat = ({ authUrl }: ChatProps) => {
   const [remixSourceMessageId, setRemixSourceMessageId] = useState<
     number | null
   >(null);
+  const [playlistRemixSource, setPlaylistRemixSource] = useState<
+    PlaylistRemixSource | null
+  >(null);
   const [remixPrompt, setRemixPrompt] = useState("");
   const [actionKey, setActionKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [navOverlayOpen, setNavOverlayOpen] = useState(false);
+  const [navPanel, setNavPanel] = useState<NavPanel>("threads");
+  const [playlists, setPlaylists] = useState<PlaylistSummary[]>([]);
+  const [playlistQuery, setPlaylistQuery] = useState("");
+  const [loadingPlaylists, setLoadingPlaylists] = useState(false);
+  const [playlistRemixId, setPlaylistRemixId] = useState<string | null>(null);
   const authRedirecting = useRef(false);
   const sessionSyncPromise = useRef<Promise<boolean> | null>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const previousMessageMetricsRef = useRef<MessageMetrics>({
+    count: 0,
+    contentChars: 0,
+    songCards: 0,
+    threadId: null,
+  });
 
   const hasSongs = useMemo(
     () =>
@@ -108,6 +207,42 @@ export const Chat = ({ authUrl }: ChatProps) => {
       ),
     [messages],
   );
+
+  const closeNavOverlay = () => setNavOverlayOpen(false);
+  const updateAutoScrollIntent = () => {
+    const container = messageListRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const distanceFromBottom = container.scrollHeight - container.scrollTop -
+      container.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom < 96;
+  };
+  const scrollMessageListToBottom = (behavior: ScrollBehavior = "auto") => {
+    const container = messageListRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
+  };
+  const filteredPlaylists = useMemo(() => {
+    const query = playlistQuery.trim().toLowerCase();
+
+    if (!query) {
+      return playlists;
+    }
+
+    return playlists.filter((playlist) =>
+      playlist.name.toLowerCase().includes(query)
+    );
+  }, [playlistQuery, playlists]);
 
   const onAuthRequired = () => {
     if (authRedirecting.current) {
@@ -210,6 +345,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
 
       const nextMessages = await response.json() as ChatMessage[];
       setMessages(nextMessages.map(toMessageView));
+      shouldAutoScrollRef.current = true;
     } catch (error) {
       console.error("failed to fetch thread messages", error);
       if (!authRedirecting.current) {
@@ -221,9 +357,41 @@ export const Chat = ({ authUrl }: ChatProps) => {
   };
 
   const openThread = async (threadId: number) => {
+    closeNavOverlay();
+    shouldAutoScrollRef.current = true;
     setActiveThreadId(threadId);
     setError(null);
     await fetchMessages(threadId);
+  };
+
+  const fetchPlaylists = async (force = false) => {
+    if (loadingPlaylists) {
+      return;
+    }
+
+    if (playlists.length && !force) {
+      return;
+    }
+
+    setLoadingPlaylists(true);
+
+    try {
+      const response = await fetchWithSessionRecovery("/api/spotify/playlists");
+      requireOk(response, "failed to load playlists");
+
+      const rawPlaylists = await response.json() as unknown[];
+      const nextPlaylists = rawPlaylists
+        .map(toPlaylistSummary)
+        .filter((playlist): playlist is PlaylistSummary => playlist !== null);
+      setPlaylists(nextPlaylists);
+    } catch (error) {
+      console.error("failed to fetch playlists", error);
+      if (!authRedirecting.current) {
+        setError("Could not load playlists.");
+      }
+    } finally {
+      setLoadingPlaylists(false);
+    }
   };
 
   useEffect(() => {
@@ -246,10 +414,114 @@ export const Chat = ({ authUrl }: ChatProps) => {
     })();
   }, []);
 
+  useEffect(() => {
+    const handleOpenPanel = (event: Event) => {
+      const detail = (event as CustomEvent<{ panel?: string }>).detail;
+      const panel = detail?.panel;
+
+      if (
+        panel !== "threads" && panel !== "devices" && panel !== "playlists"
+      ) {
+        return;
+      }
+
+      setNavPanel(panel);
+      setNavOverlayOpen(true);
+    };
+
+    globalThis.addEventListener(
+      "luther:open-nav-panel",
+      handleOpenPanel as EventListener,
+    );
+
+    return () => {
+      globalThis.removeEventListener(
+        "luther:open-nav-panel",
+        handleOpenPanel as EventListener,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!navOverlayOpen || navPanel !== "playlists") {
+      return;
+    }
+
+    void fetchPlaylists();
+  }, [navOverlayOpen, navPanel]);
+
+  useEffect(() => {
+    const metrics = toMessageMetrics(messages, activeThreadId);
+    const previousMetrics = previousMessageMetricsRef.current;
+    previousMessageMetricsRef.current = metrics;
+
+    const threadChanged = metrics.threadId !== previousMetrics.threadId;
+    const isNewMessage = metrics.count > previousMetrics.count;
+    const hasTextChange = metrics.contentChars !== previousMetrics.contentChars;
+    const hasOnlySongCardChange =
+      metrics.songCards !== previousMetrics.songCards &&
+      !isNewMessage &&
+      !hasTextChange;
+
+    if (hasOnlySongCardChange) {
+      return;
+    }
+
+    if (!shouldAutoScrollRef.current && !isNewMessage && !threadChanged) {
+      return;
+    }
+
+    scrollMessageListToBottom(isNewMessage ? "smooth" : "auto");
+  }, [messages, activeThreadId]);
+
   const resetForNewChat = () => {
+    closeNavOverlay();
     setActiveThreadId(null);
     setMessages([]);
+    setPrompt("");
     setError(null);
+  };
+
+  const openDevicesPanel = () => {
+    setNavPanel("devices");
+    setNavOverlayOpen(true);
+  };
+
+  const remixFromPlaylist = async (playlist: PlaylistSummary) => {
+    setPlaylistRemixId(playlist.id);
+    setError(null);
+
+    try {
+      const response = await fetchWithSessionRecovery(
+        `/api/spotify/playlists/${encodeURIComponent(playlist.id)}/tracks`,
+      );
+      requireOk(response, "failed to load playlist tracks");
+
+      const body = await response.json() as { songs?: RemixSeedSong[] };
+      const songs = Array.isArray(body.songs) ? body.songs : [];
+
+      if (!songs.length) {
+        setError("No remixable songs found in that playlist.");
+        return;
+      }
+
+      setRemixSourceMessageId(null);
+      setPlaylistRemixSource({
+        playlistName: playlist.name,
+        songs,
+      });
+      setRemixPrompt("");
+      closeNavOverlay();
+      (document.getElementById(REMIX_MODAL_ID) as HTMLDialogElement)
+        ?.showModal();
+    } catch (error) {
+      console.error("playlist remix failed", error);
+      if (!authRedirecting.current) {
+        setError("Playlist remix failed. Please try again.");
+      }
+    } finally {
+      setPlaylistRemixId(null);
+    }
   };
 
   const getSelectedDevice = () =>
@@ -337,8 +609,9 @@ export const Chat = ({ authUrl }: ChatProps) => {
     }: {
       message?: string;
       remix?: {
-        sourceMessageId: number;
+        sourceMessageId?: number;
         prompt?: string;
+        songs?: RemixSeedSong[];
       };
     } = {},
   ) => {
@@ -353,6 +626,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
 
     setError(null);
     setSubmitting(true);
+    shouldAutoScrollRef.current = true;
     if (!message) {
       setPrompt("");
     }
@@ -512,6 +786,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
     }
 
     setRemixSourceMessageId(messageId);
+    setPlaylistRemixSource(null);
     setRemixPrompt("");
     (document.getElementById(REMIX_MODAL_ID) as HTMLDialogElement)
       ?.showModal();
@@ -527,134 +802,310 @@ export const Chat = ({ authUrl }: ChatProps) => {
     return (
       <div
         key={keyPrefix}
-        className="border rounded p-3 flex flex-row items-center gap-3"
+        className="rounded-lg bg-gray-50/70 dark:bg-gray-800/40 p-2.5 flex flex-row items-center gap-3"
       >
         <div className="w-[60px] h-[60px] flex items-center justify-center shrink-0">
           <Cover images={song.album.images} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="truncate">
-            <span className="text-gray-400">song:</span> {song.name}
-          </div>
-          <div className="truncate">
-            <span className="text-gray-400">album:</span> {song.album.name}
-          </div>
-          <div className="truncate">
-            <span className="text-gray-400">artist:</span>{" "}
-            {song.artists[0]?.name}
+        <div className="flex-1 min-w-0 text-sm leading-tight">
+          <div className="truncate font-medium">{song.name}</div>
+          <div className="truncate text-xs text-gray-500">
+            {song.artists[0]?.name} • {song.album.name}
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button
-            type="button"
-            className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
-            disabled={actionKey === `${keyPrefix}-play`}
-            onClick={() =>
-              void withAction(`${keyPrefix}-play`, async () =>
-                await sendSpotifyAction({
-                  endpoint: "/api/spotify/play",
-                  uris: [song.uri],
-                  actionName: "play",
-                }))}
-          >
-            Play
-          </button>
-          <button
-            type="button"
-            className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
-            disabled={actionKey === `${keyPrefix}-queue`}
-            onClick={() =>
-              void withAction(`${keyPrefix}-queue`, async () =>
-                await sendSpotifyAction({
-                  endpoint: "/api/spotify/queue",
-                  uris: [song.uri],
-                  actionName: "queue",
-                }))}
-          >
-            Queue
-          </button>
-          <button
-            type="button"
-            className="border rounded px-2 py-1 cursor-pointer"
-            onClick={() =>
-              startPlaylistFlow([song.uri])}
-          >
-            Playlist
-          </button>
-          <button
-            type="button"
-            className="border rounded px-2 py-1 cursor-pointer"
-            onClick={() =>
-              globalThis.open(
-                song.external_urls.spotify,
-                "_blank",
-                "noopener,noreferrer",
-              )}
-          >
-            Spotify
-          </button>
+        <div className="flex flex-row items-center gap-1 shrink-0">
+          <Tooltip tooltip="Play now" className="top-9 right-0">
+            <button
+              type="button"
+              className={iconButtonClass}
+              disabled={actionKey === `${keyPrefix}-play`}
+              onClick={() =>
+                void withAction(`${keyPrefix}-play`, async () =>
+                  await sendSpotifyAction({
+                    endpoint: "/api/spotify/play",
+                    uris: [song.uri],
+                    actionName: "play",
+                  }))}
+            >
+              <PlayerPlay className={iconClass} />
+            </button>
+          </Tooltip>
+          <Tooltip tooltip="Queue next" className="top-9 right-0">
+            <button
+              type="button"
+              className={iconButtonClass}
+              disabled={actionKey === `${keyPrefix}-queue`}
+              onClick={() =>
+                void withAction(`${keyPrefix}-queue`, async () =>
+                  await sendSpotifyAction({
+                    endpoint: "/api/spotify/queue",
+                    uris: [song.uri],
+                    actionName: "queue",
+                  }))}
+            >
+              <PlayerTrackNext className={iconClass} />
+            </button>
+          </Tooltip>
+          <Tooltip tooltip="Add to playlist" className="top-9 right-0">
+            <button
+              type="button"
+              className={iconButtonClass}
+              onClick={() =>
+                startPlaylistFlow([song.uri])}
+            >
+              <PlaylistAdd className={iconClass} />
+            </button>
+          </Tooltip>
+          <Tooltip tooltip="Open in Spotify" className="top-9 right-0">
+            <button
+              type="button"
+              className={iconButtonClass}
+              onClick={() =>
+                globalThis.open(
+                  song.external_urls.spotify,
+                  "_blank",
+                  "noopener,noreferrer",
+                )}
+            >
+              <BrandSpotify className={iconClass} />
+            </button>
+          </Tooltip>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="w-full py-4 flex flex-col md:flex-row gap-4">
-      <aside className="w-full md:w-72 border rounded h-fit">
-        <div className="p-3 border-b flex flex-row justify-between items-center">
-          <div className="font-semibold">Conversations</div>
+    <div className="relative w-full py-1 flex flex-col md:flex-row gap-4 h-[calc(100vh-4.5rem)] min-h-[34rem]">
+      {navOverlayOpen && (
+        <>
           <button
             type="button"
-            className="border rounded px-2 py-1 flex flex-row gap-1 items-center cursor-pointer"
-            onClick={resetForNewChat}
-          >
-            <Plus className="w-4 h-4" />
-            New
-          </button>
-        </div>
-        <div className="max-h-[70vh] overflow-y-auto">
-          {threads.length === 0 && (
-            <div className="p-3 text-sm text-gray-500">No chats yet</div>
-          )}
-          {threads.map((thread) => (
-            <button
-              key={thread.id}
-              type="button"
-              className={`w-full p-3 border-b text-left flex flex-row justify-between items-start gap-2 cursor-pointer ${
-                activeThreadId === thread.id
-                  ? "bg-gray-100 dark:bg-gray-800"
-                  : ""
-              }`}
-              onClick={() => void openThread(thread.id)}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="truncate">{thread.title}</div>
-                <div className="text-xs text-gray-500">
-                  {formatTimestamp(thread.updated_at)}
+            className="fixed inset-0 z-[12000] !p-0 !rounded-none !border-0 !bg-black/30 cursor-pointer"
+            onClick={closeNavOverlay}
+          />
+          <div className="fixed inset-0 z-[12010] p-3 sm:p-6 flex items-start sm:items-center justify-center pointer-events-none">
+            <aside className="pointer-events-auto w-full max-w-2xl h-[min(82vh,44rem)] bg-white/95 dark:bg-gray-900/95 border border-gray-200/70 dark:border-gray-800 rounded-xl backdrop-blur-sm shadow-xl flex flex-col gap-2 p-2">
+              <div className="flex flex-row items-center justify-between px-1 border-b border-gray-200/70 dark:border-gray-800 pb-2">
+                <div className="flex flex-row items-center gap-1">
+                  <Tooltip tooltip="Conversations" className="top-8 left-0">
+                    <button
+                      type="button"
+                      className={`${iconButtonClass} ${
+                        navPanel === "threads"
+                          ? "text-gray-900 dark:text-gray-100"
+                          : ""
+                      }`}
+                      onClick={() => setNavPanel("threads")}
+                    >
+                      <Messages className={iconClass} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip tooltip="Devices" className="top-8 left-0">
+                    <button
+                      type="button"
+                      className={`${iconButtonClass} ${
+                        navPanel === "devices"
+                          ? "text-gray-900 dark:text-gray-100"
+                          : ""
+                      }`}
+                      onClick={() => setNavPanel("devices")}
+                    >
+                      <DeviceSpeaker className={iconClass} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip tooltip="Playlists" className="top-8 left-0">
+                    <button
+                      type="button"
+                      className={`${iconButtonClass} ${
+                        navPanel === "playlists"
+                          ? "text-gray-900 dark:text-gray-100"
+                          : ""
+                      }`}
+                      onClick={() => setNavPanel("playlists")}
+                    >
+                      <Playlist className={iconClass} />
+                    </button>
+                  </Tooltip>
+                </div>
+                <div className="flex flex-row items-center gap-1">
+                  {navPanel === "threads" && (
+                    <Tooltip
+                      tooltip="New conversation"
+                      className="top-8 right-0"
+                    >
+                      <button
+                        type="button"
+                        className={iconButtonClass}
+                        onClick={resetForNewChat}
+                      >
+                        <Plus className={iconClass} />
+                      </button>
+                    </Tooltip>
+                  )}
+                  <Tooltip tooltip="Close" className="top-8 right-0">
+                    <button
+                      type="button"
+                      className={iconButtonClass}
+                      onClick={closeNavOverlay}
+                    >
+                      <X className={iconClass} />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
-              <Trash
-                className="w-4 h-4 shrink-0 cursor-pointer"
-                onClick={(event: JSX.TargetedMouseEvent<SVGElement>) => {
-                  event.stopPropagation();
-                  void deleteThread(thread.id);
-                }}
-              />
-            </button>
-          ))}
-        </div>
-      </aside>
 
-      <section className="flex-1 border rounded">
-        <div className="p-3 border-b">
-          <Devices
-            tracks={hasSongs}
-            devices={devices}
-            setDevices={setDevices}
-          />
-        </div>
+              {navPanel === "devices"
+                ? hasSongs
+                  ? (
+                    <div className="px-1 py-2">
+                      <Devices
+                        tracks={hasSongs}
+                        devices={devices}
+                        setDevices={setDevices}
+                      />
+                    </div>
+                  )
+                  : (
+                    <div className="px-2 py-2 text-sm text-gray-500">
+                      Ask for songs first to enable device controls.
+                    </div>
+                  )
+                : navPanel === "playlists"
+                ? (
+                  <div className="px-1 py-2 min-h-0 h-full flex flex-col gap-2">
+                    <input
+                      type="text"
+                      value={playlistQuery}
+                      placeholder="Search playlists"
+                      className="w-full p-2 text-sm"
+                      onInput={(event) =>
+                        setPlaylistQuery(
+                          (event.target as HTMLInputElement).value,
+                        )}
+                    />
+                    <div className="min-h-0 overflow-y-auto pr-1">
+                      {loadingPlaylists && (
+                        <div className="p-2 text-sm text-gray-500">
+                          Loading playlists...
+                        </div>
+                      )}
+                      {!loadingPlaylists && filteredPlaylists.length === 0 && (
+                        <div className="p-2 text-sm text-gray-500">
+                          No playlists found.
+                        </div>
+                      )}
+                      {filteredPlaylists.map((playlist) => (
+                        <div
+                          key={playlist.id}
+                          className="w-full pl-2 pr-1 py-2 flex flex-row justify-between items-center gap-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate text-sm">
+                              {playlist.name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {playlist.tracksTotal} tracks
+                            </div>
+                          </div>
+                          <Tooltip
+                            tooltip="Remix playlist"
+                            className="top-8 right-0"
+                          >
+                            <button
+                              type="button"
+                              className={iconButtonClass}
+                              disabled={playlistRemixId === playlist.id}
+                              onClick={() => void remixFromPlaylist(playlist)}
+                            >
+                              <ArrowsShuffle className={iconClass} />
+                            </button>
+                          </Tooltip>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+                : (
+                  <div className="min-h-0 overflow-y-auto pr-1">
+                    {threads.length === 0 && (
+                      <div className="p-3 text-sm text-gray-500">
+                        No chats yet
+                      </div>
+                    )}
+                    {threads.map((thread) => (
+                      <div
+                        key={thread.id}
+                        className={`w-full pl-2 pr-1 py-2 flex flex-row justify-between items-center gap-2 border-l ${
+                          activeThreadId === thread.id
+                            ? "border-gray-400 dark:border-gray-500"
+                            : "border-transparent"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          className={`cursor-pointer !p-0 !border-0 !bg-transparent !rounded-none flex-1 min-w-0 text-left ${
+                            activeThreadId === thread.id
+                              ? "text-gray-900 dark:text-gray-100"
+                              : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
+                          }`}
+                          onClick={() => void openThread(thread.id)}
+                        >
+                          <div className="truncate text-sm">{thread.title}</div>
+                          <div className="text-xs text-gray-500">
+                            {formatTimestamp(thread.updated_at)}
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          className={iconButtonClass}
+                          onClick={(
+                            event: JSX.TargetedMouseEvent<HTMLButtonElement>,
+                          ) => {
+                            event.stopPropagation();
+                            void deleteThread(thread.id);
+                          }}
+                        >
+                          <Trash className="w-4 h-4 shrink-0" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </aside>
+          </div>
+        </>
+      )}
 
-        <div className="p-3 min-h-[50vh] max-h-[60vh] overflow-y-auto flex flex-col gap-3">
+      <div className="fixed top-16 left-1 z-[70] flex flex-col gap-1">
+        <Tooltip tooltip="New conversation" className="top-8 left-0">
+          <button
+            type="button"
+            className={iconButtonClass}
+            onClick={resetForNewChat}
+            aria-label="Start a new conversation"
+          >
+            <Edit className={iconClass} />
+          </button>
+        </Tooltip>
+        <Tooltip tooltip="Devices" className="top-8 left-0">
+          <button
+            type="button"
+            className={iconButtonClass}
+            onClick={openDevicesPanel}
+            aria-label="Open devices"
+          >
+            <DeviceSpeaker className={iconClass} />
+          </button>
+        </Tooltip>
+      </div>
+
+      <section className="relative z-20 flex-1 min-h-0 flex flex-col">
+        <div
+          ref={messageListRef}
+          className="scrollbar-none p-2 flex-1 min-h-0 overflow-y-auto flex flex-col gap-4"
+          onScroll={updateAutoScrollIntent}
+        >
           {loadingThread && (
             <div className="text-sm text-gray-500">Loading conversation...</div>
           )}
@@ -668,14 +1119,14 @@ export const Chat = ({ authUrl }: ChatProps) => {
           {messages.map((message) => (
             <div key={String(message.id)} className="flex flex-col gap-2">
               <div
-                className={`rounded border p-3 ${
+                className={`${
                   message.role === "user"
-                    ? "self-end bg-gray-100 dark:bg-gray-800"
-                    : "self-start"
+                    ? "self-end max-w-[85%] bg-gray-100 dark:bg-gray-800 rounded-2xl px-3 py-2"
+                    : "self-start max-w-[92%] px-1"
                 }`}
               >
                 {message.role === "assistant" && (
-                  <div className="text-xs text-gray-500 mb-1 uppercase">
+                  <div className="text-[11px] text-gray-500 mb-1 uppercase tracking-wide">
                     {submitting && message.content.length === 0
                       ? (
                         <span className="inline-flex items-center gap-0.5">
@@ -686,62 +1137,76 @@ export const Chat = ({ authUrl }: ChatProps) => {
                       : "Luther"}
                   </div>
                 )}
-                <div className="whitespace-pre-wrap">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
                 </div>
               </div>
 
               {message.role === "assistant" &&
                 (message.song_cards?.length ?? 0) > 0 && (
-                <div className="flex flex-col gap-2 border rounded p-3">
-                  <div className="flex flex-row flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
-                      disabled={actionKey === `${message.id}-play-all`}
-                      onClick={() =>
-                        void withAction(`${message.id}-play-all`, async () =>
-                          await sendSpotifyAction({
-                            endpoint: "/api/spotify/play",
-                            uris: message.song_cards!.map((song) =>
-                              song.uri
-                            ),
-                            actionName: "play",
-                          }))}
+                <div className="flex flex-col gap-2 pl-3 border-l border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-row flex-wrap gap-1.5">
+                    <Tooltip tooltip="Play all now" className="top-9 left-0">
+                      <button
+                        type="button"
+                        className={iconButtonClass}
+                        disabled={actionKey === `${message.id}-play-all`}
+                        onClick={() =>
+                          void withAction(`${message.id}-play-all`, async () =>
+                            await sendSpotifyAction({
+                              endpoint: "/api/spotify/play",
+                              uris: message.song_cards!.map((song) =>
+                                song.uri
+                              ),
+                              actionName: "play",
+                            }))}
+                      >
+                        <PlayerPlay className={iconClass} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip tooltip="Queue all" className="top-9 left-0">
+                      <button
+                        type="button"
+                        className={iconButtonClass}
+                        disabled={actionKey === `${message.id}-queue-all`}
+                        onClick={() =>
+                          void withAction(`${message.id}-queue-all`, async () =>
+                            await sendSpotifyAction({
+                              endpoint: "/api/spotify/queue",
+                              uris: message.song_cards!.map((song) =>
+                                song.uri
+                              ),
+                              actionName: "queue",
+                            }))}
+                      >
+                        <PlayerTrackNext className={iconClass} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip
+                      tooltip="Add all to playlist"
+                      className="top-9 left-0"
                     >
-                      Play All
-                    </button>
-                    <button
-                      type="button"
-                      className="border rounded px-2 py-1 cursor-pointer disabled:cursor-not-allowed"
-                      disabled={actionKey === `${message.id}-queue-all`}
-                      onClick={() =>
-                        void withAction(`${message.id}-queue-all`, async () =>
-                          await sendSpotifyAction({
-                            endpoint: "/api/spotify/queue",
-                            uris: message.song_cards!.map((song) => song.uri),
-                            actionName: "queue",
-                          }))}
-                    >
-                      Queue All
-                    </button>
-                    <button
-                      type="button"
-                      className="border rounded px-2 py-1 cursor-pointer"
-                      onClick={() =>
-                        startPlaylistFlow(message.song_cards!.map((song) =>
-                          song.uri
-                        ))}
-                    >
-                      Playlist All
-                    </button>
-                    <button
-                      type="button"
-                      className="border rounded px-2 py-1 cursor-pointer"
-                      onClick={() => startRemixFlow(message.id)}
-                    >
-                      Remix
-                    </button>
+                      <button
+                        type="button"
+                        className={iconButtonClass}
+                        onClick={() =>
+                          startPlaylistFlow(message.song_cards!.map((song) =>
+                            song.uri
+                          ))}
+                      >
+                        <PlaylistAdd className={iconClass} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip tooltip="Remix this set" className="top-9 right-0">
+                      <button
+                        type="button"
+                        className={iconButtonClass}
+                        onClick={() =>
+                          startRemixFlow(message.id)}
+                      >
+                        <ArrowsShuffle className={iconClass} />
+                      </button>
+                    </Tooltip>
                   </div>
 
                   {message.song_cards!.map((song, index) =>
@@ -753,13 +1218,13 @@ export const Chat = ({ authUrl }: ChatProps) => {
           ))}
         </div>
 
-        <div className="p-3 border-t flex flex-col gap-2">
+        <div className="sticky bottom-0 pt-1 pb-1 px-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col gap-2">
           {error && <div className="text-sm text-red-600">{error}</div>}
           <textarea
             rows={2}
             value={prompt}
             placeholder="What do you want to hear?"
-            className="w-full"
+            className="w-full p-2.5 text-sm resize-none"
             onInput={(event) => {
               const target = event.target as HTMLTextAreaElement;
               setPrompt(target.value);
@@ -773,16 +1238,6 @@ export const Chat = ({ authUrl }: ChatProps) => {
               void submit();
             }}
           />
-          <div className="flex flex-row justify-end items-center gap-2">
-            <button
-              type="button"
-              className="border rounded px-3 py-1 cursor-pointer disabled:cursor-not-allowed"
-              disabled={submitting || !prompt.trim()}
-              onClick={() => void submit()}
-            >
-              {submitting ? "Thinking..." : "Send"}
-            </button>
-          </div>
         </div>
       </section>
 
@@ -803,27 +1258,54 @@ export const Chat = ({ authUrl }: ChatProps) => {
           }}
         />
       </Modal>
-      <Modal id={REMIX_MODAL_ID} title="Remix These Songs">
+      <Modal
+        id={REMIX_MODAL_ID}
+        title={playlistRemixSource ? "Remix Playlist" : "Remix These Songs"}
+      >
         <form
           className="w-full flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();
             const sourceMessageId = remixSourceMessageId;
+            const playlistSource = playlistRemixSource;
 
-            if (!sourceMessageId) {
+            if (!sourceMessageId && !playlistSource) {
               return;
             }
 
             (document.getElementById(REMIX_MODAL_ID) as HTMLDialogElement)
               ?.close();
+            const promptValue = remixPrompt.trim();
+            setRemixSourceMessageId(null);
+            setPlaylistRemixSource(null);
+            setRemixPrompt("");
+
+            if (sourceMessageId) {
+              void submit({
+                message: `Remix: ${
+                  promptValue ||
+                  "give me more songs in this lane combined with these"
+                }`,
+                remix: {
+                  sourceMessageId,
+                  prompt: promptValue,
+                },
+              });
+              return;
+            }
+
+            if (!playlistSource) {
+              return;
+            }
+
             void submit({
-              message: `Remix: ${
-                remixPrompt.trim() ||
+              message: `Remix playlist "${playlistSource.playlistName}": ${
+                promptValue ||
                 "give me more songs in this lane combined with these"
               }`,
               remix: {
-                sourceMessageId,
-                prompt: remixPrompt.trim(),
+                prompt: promptValue,
+                songs: playlistSource.songs,
               },
             });
           }}
@@ -843,9 +1325,13 @@ export const Chat = ({ authUrl }: ChatProps) => {
             <button
               type="button"
               className="border rounded px-3 py-1 cursor-pointer"
-              onClick={() =>
+              onClick={() => {
+                setRemixSourceMessageId(null);
+                setPlaylistRemixSource(null);
+                setRemixPrompt("");
                 (document.getElementById(REMIX_MODAL_ID) as HTMLDialogElement)
-                  ?.close()}
+                  ?.close();
+              }}
             >
               Cancel
             </button>

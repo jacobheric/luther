@@ -1,4 +1,8 @@
-import { resolveRecommendedSongs, streamAssistantTurn } from "@/lib/ai/chat.ts";
+import {
+  DEFAULT_MIN_SONGS_PER_TURN,
+  resolveRecommendedSongs,
+  streamAssistantTurn,
+} from "@/lib/ai/chat.ts";
 import type { ChatStreamEvent } from "@/lib/chat/types.ts";
 import {
   createChatMessage,
@@ -39,6 +43,46 @@ const toMessageId = (value: unknown) =>
   typeof value === "number" && Number.isInteger(value) && value > 0
     ? value
     : null;
+
+const toRemixSongs = (
+  value: unknown,
+) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const maybeSong = entry as {
+        name?: unknown;
+        artist?: unknown;
+        album?: unknown;
+      };
+      const name = typeof maybeSong.name === "string"
+        ? maybeSong.name.trim()
+        : "";
+      const artist = typeof maybeSong.artist === "string"
+        ? maybeSong.artist.trim()
+        : "";
+      const album = typeof maybeSong.album === "string"
+        ? maybeSong.album.trim()
+        : "";
+
+      if (!name || !artist || !album) {
+        return null;
+      }
+
+      return { name, artist, album };
+    })
+    .filter((song): song is { name: string; artist: string; album: string } =>
+      song !== null
+    )
+    .slice(0, 80);
+};
 
 const toRemixModelPrompt = (
   {
@@ -82,6 +126,8 @@ const emitEvent = (
   controller.enqueue(toChunk(event));
 };
 
+const MAX_RESOLVED_SONGS_PER_TURN = 60;
+
 export const handler = define.handlers({
   async POST(ctx) {
     if (!ctx.state.session) {
@@ -94,6 +140,7 @@ export const handler = define.handlers({
       remix?: {
         sourceMessageId?: unknown;
         prompt?: unknown;
+        songs?: unknown;
       } | unknown;
     } | null;
 
@@ -105,16 +152,20 @@ export const handler = define.handlers({
       ? body.remix as {
         sourceMessageId?: unknown;
         prompt?: unknown;
+        songs?: unknown;
       }
       : null;
     const remixSourceMessageId = remix
       ? toMessageId(remix.sourceMessageId)
       : null;
+    const remixSongs = remix ? toRemixSongs(remix.songs) : [];
     const remixPrompt = remix && typeof remix.prompt === "string"
       ? remix.prompt.trim()
       : "";
+    const hasRemixInput = Boolean(remixSourceMessageId) ||
+      remixSongs.length > 0;
     const message = rawMessage ||
-      (remixSourceMessageId
+      (hasRemixInput
         ? `Remix: ${
           remixPrompt || "give me more songs in this lane combined with these"
         }`
@@ -171,6 +222,11 @@ export const handler = define.handlers({
                   album: song.album.name,
                 })),
               });
+            } else if (remixSongs.length) {
+              modelMessage = toRemixModelPrompt({
+                remixPrompt,
+                songs: remixSongs,
+              });
             }
 
             const previousResponseId = await getLatestAssistantResponseId(
@@ -220,10 +276,17 @@ export const handler = define.handlers({
               ctx.state.session!,
               thread.id,
             );
+            const desiredSongCount = Math.min(
+              MAX_RESOLVED_SONGS_PER_TURN,
+              Math.max(
+                DEFAULT_MIN_SONGS_PER_TURN,
+                assistant.recommendations.length,
+              ),
+            );
             const songs = await resolveRecommendedSongs(
               assistant.recommendations,
               {
-                maxResults: assistant.requestedSongCount,
+                maxResults: desiredSongCount,
                 excludeUris: existingSongUris,
               },
             );

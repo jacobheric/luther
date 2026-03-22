@@ -16,6 +16,13 @@ export const Devices = (
 
   const getDevices = async () => {
     const response = await fetch(`/api/spotify/devices`);
+    if (!response.ok) {
+      setDevices([]);
+      setDevicesLoaded(true);
+      setLoading(false);
+      return;
+    }
+
     setDevices(JSON.parse(await response.text()));
     setDevicesLoaded(true);
     setTimeout(() => setLoading(false), 1000);
@@ -32,45 +39,44 @@ export const Devices = (
   }
 
   return (
-    <div className="flex flex-row justify-between md:justify-start items-center w-full">
-      <div className="flex flex-row justify-start gap-2 items-center border border-r-0 rounded p-3 rounded-r-none text-gray-900 dark:text-white border-gray-200">
-        <Tooltip
-          tooltip="Reload devices"
-          className="top-6 left-2"
-        >
-          <Reload
-            className={`cursor-pointer w-6 opacity-60 ${
-              loading && "animate-spin"
-            }`}
-            onClick={() => {
-              setLoading(true);
-              getDevices();
-            }}
-          />
-        </Tooltip>
-
-        <Tooltip
-          tooltip="Spotify must be open to be found"
-          className="top-6 left-2"
-          tooltipClassName={`${
-            devicesLoaded && devices?.length === 0 ? "block" : "hidden"
-          }`}
-        >
-          <InfoCircle className="w-6 opacity-60" />
-        </Tooltip>
-      </div>
-
+    <div className="flex flex-row items-center gap-1.5">
       <select
         name="device"
         id="device"
         disabled={!devicesLoaded || devices?.length === 0}
-        className="w-full rounded-l-none"
+        className="flex-1 p-2 text-sm !border-0"
       >
-        {devices?.length === 0 && <option value="">No Device Found</option>}
+        {devices?.length === 0 && <option value="">No device found</option>}
         {devices.map(({ id, name }: Device) => (
-          <option className="px-2 mx-2" value={id || ""}>{name}</option>
+          <option key={id || name} className="px-2 mx-2" value={id || ""}>
+            {name}
+          </option>
         ))}
       </select>
+
+      <Tooltip tooltip="Reload devices" className="top-8 right-0">
+        <button
+          type="button"
+          className="cursor-pointer !p-0 h-7 w-7 inline-flex items-center justify-center !border-0 !bg-transparent !rounded-none text-gray-500 hover:text-gray-900 dark:hover:text-white"
+          onClick={() => {
+            setLoading(true);
+            void getDevices();
+          }}
+        >
+          <Reload
+            className={`w-4 h-4 shrink-0 ${loading ? "animate-spin" : ""}`}
+          />
+        </button>
+      </Tooltip>
+      <Tooltip
+        tooltip="Spotify must be open to be found"
+        className="top-8 right-0"
+        tooltipClassName={`${
+          devicesLoaded && devices?.length === 0 ? "block" : "hidden"
+        }`}
+      >
+        <InfoCircle className="w-4 h-4 shrink-0 opacity-60" />
+      </Tooltip>
     </div>
   );
 };

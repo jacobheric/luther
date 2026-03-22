@@ -1,4 +1,7 @@
 import { deleteCookie, getCookies, setCookie } from "@std/http/cookie";
+import { createAuthClient } from "@neondatabase/neon-js/auth";
+import { SupabaseAuthAdapter } from "@neondatabase/neon-js/auth/vanilla/adapters";
+import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 
 const ACCESS_TOKEN_COOKIE = "luther-access-token";
 const REFRESH_TOKEN_COOKIE = "luther-refresh-token";
@@ -30,6 +33,11 @@ export const getSessionUserId = (session: AppSession) => {
 };
 
 type SessionTokens = Pick<AppSession, "access_token" | "refresh_token">;
+
+const firstNonEmpty = (values: unknown[]) =>
+  values.find((value): value is string =>
+    typeof value === "string" && value.length > 0
+  ) ?? "";
 
 const getAuthTokens = (req: Request): SessionTokens | null => {
   const cookies = getCookies(req.headers);
@@ -140,4 +148,70 @@ export const isAccessTokenExpired = (
   }
 
   return now >= (expiryMs - JWT_EXPIRY_SKEW_MS);
+};
+
+const toRefreshedSession = (
+  payload: unknown,
+  previousSession: AppSession,
+): AppSession | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const maybeData = payload as {
+    session?: Record<string, unknown>;
+    user?: Partial<AppUser>;
+  };
+  const maybeSession = maybeData.session ?? {};
+  const accessToken = firstNonEmpty([
+    maybeSession.access_token,
+    maybeSession.token,
+  ]);
+  const refreshToken = firstNonEmpty([
+    maybeSession.refresh_token,
+    maybeSession.refreshToken,
+    previousSession.refresh_token,
+  ]);
+  const userId = firstNonEmpty([
+    maybeData.user?.id,
+    previousSession.user?.id,
+  ]);
+
+  if (!accessToken || !userId) {
+    return null;
+  }
+
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    user: {
+      id: userId,
+      email: maybeData.user?.email ?? previousSession.user?.email ?? null,
+      name: maybeData.user?.name ?? previousSession.user?.name ?? null,
+    },
+  };
+};
+
+export const refreshAuthSession = async (session: AppSession) => {
+  if (!session.refresh_token) {
+    return null;
+  }
+
+  try {
+    const auth = createAuthClient(getNeonAuthUrl(), {
+      adapter: SupabaseAuthAdapter(),
+    });
+    const refreshed = await auth.refreshSession({
+      refresh_token: session.refresh_token,
+    });
+
+    if (refreshed.error) {
+      return null;
+    }
+
+    return toRefreshedSession(refreshed.data, session);
+  } catch (error) {
+    console.error("auth refresh failed", error);
+    return null;
+  }
 };
