@@ -1,6 +1,7 @@
 import {
   type AppSession,
   type AppUser,
+  isAllowedUserEmail,
   persistAuthSession,
 } from "@/lib/auth.ts";
 import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
@@ -58,6 +59,13 @@ export const handler = define.handlers({
       return Response.json(
         { error: "OAuth callback did not return a valid session." },
         { status: 400 },
+      );
+    }
+
+    if (!isAllowedUserEmail(appSession.user.email)) {
+      return Response.json(
+        { error: "Sorry, not for you!" },
+        { status: 403 },
       );
     }
 

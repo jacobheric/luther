@@ -915,7 +915,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
               <PlayerPlay className={iconClass} />
             </button>
           </Tooltip>
-          <Tooltip tooltip="Queue next" className="top-9 right-0">
+          <Tooltip tooltip="Queue" className="top-9 right-0">
             <button
               type="button"
               className={iconButtonClass}
@@ -1203,7 +1203,7 @@ export const Chat = ({ authUrl }: ChatProps) => {
 
           {!messages.length && !loadingThread && (
             <div className="text-sm text-gray-500">
-              Start a conversation and ask Luther what to play.
+              Get yer chat on below 👇
             </div>
           )}
 

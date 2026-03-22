@@ -23,8 +23,7 @@
   "imports": {
     "fresh": "jsr:@fresh/core@^2.2.0",
     "@/": "./",
-    "@neondatabase/neon-js": "npm:@neondatabase/neon-js@0.2.0-beta.1",
-    "@neondatabase/neon-js/auth": "npm:@neondatabase/neon-js@0.2.0-beta.1/auth",
+    "@neondatabase/auth": "npm:@neondatabase/auth@0.2.0-beta.1",
     "@neondatabase/postgrest-js": "npm:@neondatabase/postgrest-js@0.1.0-alpha.2",
     "@preact/signals": "npm:@preact/signals@^2.8.2",
     "@std/dotenv": "jsr:@std/dotenv",

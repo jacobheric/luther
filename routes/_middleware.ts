@@ -1,11 +1,12 @@
 import { Context } from "fresh";
 
-import { IS_DEPLOYED, PRODUCTION } from "@/lib/config.ts";
+import { IS_DEPLOYED } from "@/lib/config.ts";
 import {
   type AppSession,
   clearAuthCookies,
   getAuthSession,
   isAccessTokenExpired,
+  isAllowedUserEmail,
   persistAuthSession,
   refreshAuthSession,
 } from "@/lib/auth.ts";
@@ -70,6 +71,23 @@ const authRequiredResponse = (url: URL) => {
   return response;
 };
 
+const unauthorizedUserResponse = (url: URL) => {
+  if (isApiRoute(url.pathname)) {
+    const response = Response.json(
+      { error: "This account is not authorized." },
+      { status: 403 },
+    );
+    clearAuthCookies(response.headers);
+    return response;
+  }
+
+  const response = redirect(
+    "/login?error=This%20Google%20account%20is%20not%20authorized%20for%20this%20app.",
+  );
+  clearAuthCookies(response.headers);
+  return response;
+};
+
 const spotifyAuthRequiredResponse = (url: URL) =>
   isApiRoute(url.pathname)
     ? Response.json(
@@ -94,10 +112,6 @@ const authHandler = async (
     return redirect(canonicalLoopbackUrl.toString());
   }
 
-  if (!PRODUCTION && !IS_DEPLOYED) {
-    return ctx.next();
-  }
-
   if (
     unrestricted.some((route) => url.pathname.startsWith(route))
   ) {
@@ -110,6 +124,10 @@ const authHandler = async (
     return authRequiredResponse(url);
   }
 
+  if (!isAllowedUserEmail(ctx.state.session.user?.email)) {
+    return unauthorizedUserResponse(url);
+  }
+
   if (isAccessTokenExpired(ctx.state.session)) {
     const refreshedSession = await refreshAuthSession(ctx.state.session);
 
@@ -118,6 +136,10 @@ const authHandler = async (
     }
 
     ctx.state.session = refreshedSession;
+
+    if (!isAllowedUserEmail(ctx.state.session.user?.email)) {
+      return unauthorizedUserResponse(url);
+    }
   }
 
   const nextResp = await ctx.next();

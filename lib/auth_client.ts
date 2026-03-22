@@ -1,4 +1,4 @@
-import { createAuthClient } from "@neondatabase/neon-js/auth";
+import { createAuthClient } from "@neondatabase/auth";
 
 export const createBrowserNeonAuthClient = (authUrl: string) =>
   createAuthClient(authUrl);

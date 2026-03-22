@@ -1,5 +1,6 @@
 import { deleteCookie, getCookies, setCookie } from "@std/http/cookie";
-import { createAuthClient } from "@neondatabase/neon-js/auth";
+import { createAuthClient } from "@neondatabase/auth";
+import { ALLOWED_USER_EMAILS } from "@/lib/config.ts";
 import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 
 const ACCESS_TOKEN_COOKIE = "luther-access-token";
@@ -20,6 +21,12 @@ export type AppSession = {
 };
 
 const JWT_EXPIRY_SKEW_MS = 30_000;
+const allowedEmails = new Set(
+  (ALLOWED_USER_EMAILS ?? "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean),
+);
 
 export const getSessionUserId = (session: AppSession) => {
   const userId = session.user?.id;
@@ -29,6 +36,18 @@ export const getSessionUserId = (session: AppSession) => {
   }
 
   return userId;
+};
+
+export const isAllowedUserEmail = (email?: string | null) => {
+  if (allowedEmails.size === 0) {
+    return true;
+  }
+
+  if (!email) {
+    return false;
+  }
+
+  return allowedEmails.has(email.trim().toLowerCase());
 };
 
 type SessionTokens = Pick<AppSession, "access_token" | "refresh_token">;
