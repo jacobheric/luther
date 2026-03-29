@@ -4,8 +4,25 @@ import { Nav } from "@/islands/nav.tsx";
 import { NowPlaying } from "@/islands/now_playing.tsx";
 import { Logo } from "@/components/logo.tsx";
 
+const authRoutes = [
+  "/login",
+  "/login/callback",
+  "/logout",
+];
+
 export default function Layout(ctx: PageProps) {
   const pathname = new URL(ctx.req.url).pathname;
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+
+  if (isAuthRoute) {
+    return (
+      <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(229,231,235,0.5),transparent_55%)] dark:bg-[radial-gradient(circle_at_top,rgba(31,41,55,0.45),transparent_55%)]">
+        <Partial name="overlay-content">
+          <ctx.Component />
+        </Partial>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden">

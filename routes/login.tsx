@@ -1,18 +1,23 @@
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
+import { persistLoginFlow } from "@/lib/auth.ts";
 import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
+import { toSafeRedirectPath } from "@/lib/utils.ts";
 import { LoginForm } from "@/islands/login.tsx";
 
 export const handler = define.handlers({
   GET(ctx) {
-    const redirect = ctx.url.searchParams.get("redirect") ?? "/";
+    const redirect = toSafeRedirectPath(ctx.url.searchParams.get("redirect"));
     const error = ctx.url.searchParams.get("error") ?? undefined;
+    const headers = new Headers();
+
+    persistLoginFlow(headers, ctx.url);
 
     return page({
       authUrl: getNeonAuthUrl(),
       redirect,
       error,
-    });
+    }, { headers });
   },
 });
 

@@ -1,31 +1,48 @@
 import { type AppSession, getSessionUserId } from "@/lib/auth.ts";
 import type { ChatMessage, ChatRole, ChatThread } from "@/lib/chat/types.ts";
-import { createNeonDataApiClient } from "@/lib/db/data_api.ts";
+import { sql } from "@/lib/db/sql.ts";
 import type { TrackLite } from "@/lib/spotify/api.ts";
 
-const THREAD_FIELDS =
-  "id, title, openai_conversation_id, created_at, updated_at";
-const MESSAGE_FIELDS =
-  "id, thread_id, role, content, song_cards, openai_response_id, created_at";
+type ThreadRow = {
+  id: number;
+  title: string;
+  openai_conversation_id: string | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+};
 
-const now = () => new Date().toISOString();
+type MessageRow = {
+  id: number;
+  thread_id: number;
+  role: ChatRole;
+  content: string;
+  song_cards: unknown;
+  openai_response_id: string | null;
+  created_at: string | Date;
+};
 
 const parseSongCards = (value: unknown): TrackLite[] | null =>
   Array.isArray(value) ? value as TrackLite[] : null;
 
-const mapMessage = (
-  row: {
-    id: number;
-    thread_id: number;
-    role: ChatRole;
-    content: string;
-    song_cards: unknown;
-    openai_response_id: string | null;
-    created_at: string;
-  },
-): ChatMessage => ({
-  ...row,
+const toIsoString = (value: string | Date) =>
+  value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+
+const mapThread = (row: ThreadRow): ChatThread => ({
+  id: row.id,
+  title: row.title,
+  openai_conversation_id: row.openai_conversation_id,
+  created_at: toIsoString(row.created_at),
+  updated_at: toIsoString(row.updated_at),
+});
+
+const mapMessage = (row: MessageRow): ChatMessage => ({
+  id: row.id,
+  thread_id: row.thread_id,
+  role: row.role,
+  content: row.content,
   song_cards: parseSongCards(row.song_cards),
+  openai_response_id: row.openai_response_id,
+  created_at: toIsoString(row.created_at),
 });
 
 const parseThreadId = (threadId: number) => {
@@ -40,25 +57,23 @@ const parseMessageId = (messageId: number) => {
   }
 };
 
+const toJsonb = (value: unknown) =>
+  value === null || value === undefined ? null : JSON.stringify(value);
+
 export const listChatThreads = async (
   session: AppSession,
   limit: number = 40,
 ) => {
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_threads")
-    .select(THREAD_FIELDS)
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false })
-    .limit(limit);
+  const rows = await sql<ThreadRow[]>`
+    select id, title, openai_conversation_id, created_at, updated_at
+    from public.chat_threads
+    where user_id = ${userId}
+    order by updated_at desc
+    limit ${limit}
+  `;
 
-  if (error) {
-    console.error("error fetching chat threads", error);
-    throw error;
-  }
-
-  return (data ?? []) as ChatThread[];
+  return rows.map(mapThread);
 };
 
 export const getChatThread = async (
@@ -67,20 +82,15 @@ export const getChatThread = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_threads")
-    .select(THREAD_FIELDS)
-    .eq("id", threadId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [row] = await sql<ThreadRow[]>`
+    select id, title, openai_conversation_id, created_at, updated_at
+    from public.chat_threads
+    where id = ${threadId}
+      and user_id = ${userId}
+    limit 1
+  `;
 
-  if (error) {
-    console.error("error fetching chat thread", error);
-    throw error;
-  }
-
-  return (data ?? null) as ChatThread | null;
+  return row ? mapThread(row) : null;
 };
 
 export const createChatThread = async (
@@ -88,25 +98,21 @@ export const createChatThread = async (
   title: string,
 ) => {
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_threads")
-    .insert(
-      [{
-        user_id: userId,
-        title,
-        updated_at: now(),
-      }],
+  const [row] = await sql<ThreadRow[]>`
+    insert into public.chat_threads (
+      user_id,
+      title,
+      updated_at
     )
-    .select(THREAD_FIELDS)
-    .single();
+    values (
+      ${userId},
+      ${title},
+      now()
+    )
+    returning id, title, openai_conversation_id, created_at, updated_at
+  `;
 
-  if (error) {
-    console.error("error creating chat thread", error);
-    throw error;
-  }
-
-  return data as ChatThread;
+  return mapThread(row);
 };
 
 export const setChatThreadConversationId = async (
@@ -116,24 +122,17 @@ export const setChatThreadConversationId = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_threads")
-    .update({
-      openai_conversation_id: openaiConversationId,
-      updated_at: now(),
-    })
-    .eq("id", threadId)
-    .eq("user_id", userId)
-    .select(THREAD_FIELDS)
-    .maybeSingle();
+  const [row] = await sql<ThreadRow[]>`
+    update public.chat_threads
+    set
+      openai_conversation_id = ${openaiConversationId},
+      updated_at = now()
+    where id = ${threadId}
+      and user_id = ${userId}
+    returning id, title, openai_conversation_id, created_at, updated_at
+  `;
 
-  if (error) {
-    console.error("error updating thread conversation id", error);
-    throw error;
-  }
-
-  return (data ?? null) as ChatThread | null;
+  return row ? mapThread(row) : null;
 };
 
 export const touchChatThread = async (
@@ -142,19 +141,13 @@ export const touchChatThread = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { error } = await client
-    .from("chat_threads")
-    .update({
-      updated_at: now(),
-    })
-    .eq("id", threadId)
-    .eq("user_id", userId);
 
-  if (error) {
-    console.error("error touching chat thread", error);
-    throw error;
-  }
+  await sql`
+    update public.chat_threads
+    set updated_at = now()
+    where id = ${threadId}
+      and user_id = ${userId}
+  `;
 };
 
 export const deleteChatThread = async (
@@ -163,20 +156,14 @@ export const deleteChatThread = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_threads")
-    .delete()
-    .eq("id", threadId)
-    .eq("user_id", userId)
-    .select("id");
+  const rows = await sql<{ id: number }[]>`
+    delete from public.chat_threads
+    where id = ${threadId}
+      and user_id = ${userId}
+    returning id
+  `;
 
-  if (error) {
-    console.error("error deleting chat thread", error);
-    throw error;
-  }
-
-  return Array.isArray(data) && data.length > 0;
+  return rows.length > 0;
 };
 
 export const getChatMessages = async (
@@ -186,33 +173,16 @@ export const getChatMessages = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_messages")
-    .select(MESSAGE_FIELDS)
-    .eq("thread_id", threadId)
-    .eq("user_id", userId)
-    .order("id", { ascending: true })
-    .limit(limit);
+  const rows = await sql<MessageRow[]>`
+    select id, thread_id, role, content, song_cards, openai_response_id, created_at
+    from public.chat_messages
+    where thread_id = ${threadId}
+      and user_id = ${userId}
+    order by id asc
+    limit ${limit}
+  `;
 
-  if (error) {
-    console.error("error fetching chat messages", error);
-    throw error;
-  }
-
-  return (data ?? []).map((row) =>
-    mapMessage(
-      row as {
-        id: number;
-        thread_id: number;
-        role: ChatRole;
-        content: string;
-        song_cards: unknown;
-        openai_response_id: string | null;
-        created_at: string;
-      },
-    )
-  );
+  return rows.map(mapMessage);
 };
 
 export const getLatestAssistantResponseId = async (
@@ -221,24 +191,18 @@ export const getLatestAssistantResponseId = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_messages")
-    .select("openai_response_id")
-    .eq("thread_id", threadId)
-    .eq("user_id", userId)
-    .eq("role", "assistant")
-    .not("openai_response_id", "is", null)
-    .order("id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [row] = await sql<{ openai_response_id: string | null }[]>`
+    select openai_response_id
+    from public.chat_messages
+    where thread_id = ${threadId}
+      and user_id = ${userId}
+      and role = 'assistant'
+      and openai_response_id is not null
+    order by id desc
+    limit 1
+  `;
 
-  if (error) {
-    console.error("error fetching latest assistant response id", error);
-    throw error;
-  }
-
-  return (data?.openai_response_id ?? null) as string | null;
+  return row?.openai_response_id ?? null;
 };
 
 export const getChatMessageById = async (
@@ -254,35 +218,16 @@ export const getChatMessageById = async (
   parseThreadId(threadId);
   parseMessageId(messageId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_messages")
-    .select(MESSAGE_FIELDS)
-    .eq("thread_id", threadId)
-    .eq("id", messageId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [row] = await sql<MessageRow[]>`
+    select id, thread_id, role, content, song_cards, openai_response_id, created_at
+    from public.chat_messages
+    where thread_id = ${threadId}
+      and id = ${messageId}
+      and user_id = ${userId}
+    limit 1
+  `;
 
-  if (error) {
-    console.error("error fetching chat message by id", error);
-    throw error;
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  return mapMessage(
-    data as {
-      id: number;
-      thread_id: number;
-      role: ChatRole;
-      content: string;
-      song_cards: unknown;
-      openai_response_id: string | null;
-      created_at: string;
-    },
-  );
+  return row ? mapMessage(row) : null;
 };
 
 export const getThreadSongUris = async (
@@ -291,27 +236,17 @@ export const getThreadSongUris = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_messages")
-    .select("song_cards")
-    .eq("thread_id", threadId)
-    .eq("user_id", userId)
-    .not("song_cards", "is", null)
-    .order("id", { ascending: true });
+  const rows = await sql<{ song_cards: unknown }[]>`
+    select song_cards
+    from public.chat_messages
+    where thread_id = ${threadId}
+      and user_id = ${userId}
+      and song_cards is not null
+    order by id asc
+  `;
 
-  if (error) {
-    console.error("error fetching thread song uris", error);
-    throw error;
-  }
-
-  const uris = (data ?? []).flatMap((row) => {
-    const cards = parseSongCards(
-      (row as {
-        song_cards: unknown;
-      }).song_cards,
-    );
-
+  const uris = rows.flatMap((row) => {
+    const cards = parseSongCards(row.song_cards);
     return (cards ?? []).map((card) => card.uri);
   });
 
@@ -336,38 +271,27 @@ export const createChatMessage = async (
 ) => {
   parseThreadId(threadId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_messages")
-    .insert(
-      [{
-        thread_id: threadId,
-        user_id: userId,
-        role,
-        content,
-        song_cards: songCards,
-        openai_response_id: openaiResponseId,
-      }],
+  const [row] = await sql<MessageRow[]>`
+    insert into public.chat_messages (
+      thread_id,
+      user_id,
+      role,
+      content,
+      song_cards,
+      openai_response_id
     )
-    .select(MESSAGE_FIELDS)
-    .single();
+    values (
+      ${threadId},
+      ${userId},
+      ${role},
+      ${content},
+      ${toJsonb(songCards)}::jsonb,
+      ${openaiResponseId}
+    )
+    returning id, thread_id, role, content, song_cards, openai_response_id, created_at
+  `;
 
-  if (error) {
-    console.error("error creating chat message", error);
-    throw error;
-  }
-
-  return mapMessage(
-    data as {
-      id: number;
-      thread_id: number;
-      role: ChatRole;
-      content: string;
-      song_cards: unknown;
-      openai_response_id: string | null;
-      created_at: string;
-    },
-  );
+  return mapMessage(row);
 };
 
 export const updateChatMessageSongs = async (
@@ -383,37 +307,16 @@ export const updateChatMessageSongs = async (
   },
 ) => {
   parseThreadId(threadId);
+  parseMessageId(messageId);
   const userId = getSessionUserId(session);
-  const client = createNeonDataApiClient(session);
-  const { data, error } = await client
-    .from("chat_messages")
-    .update({
-      song_cards: songCards,
-    })
-    .eq("id", messageId)
-    .eq("thread_id", threadId)
-    .eq("user_id", userId)
-    .select(MESSAGE_FIELDS)
-    .maybeSingle();
+  const [row] = await sql<MessageRow[]>`
+    update public.chat_messages
+    set song_cards = ${toJsonb(songCards)}::jsonb
+    where id = ${messageId}
+      and thread_id = ${threadId}
+      and user_id = ${userId}
+    returning id, thread_id, role, content, song_cards, openai_response_id, created_at
+  `;
 
-  if (error) {
-    console.error("error updating chat message songs", error);
-    throw error;
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  return mapMessage(
-    data as {
-      id: number;
-      thread_id: number;
-      role: ChatRole;
-      content: string;
-      song_cards: unknown;
-      openai_response_id: string | null;
-      created_at: string;
-    },
-  );
+  return row ? mapMessage(row) : null;
 };

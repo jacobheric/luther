@@ -5,10 +5,9 @@ import {
   type AppSession,
   clearAuthCookies,
   getAuthSession,
-  isAccessTokenExpired,
   isAllowedUserEmail,
   persistAuthSession,
-  refreshAuthSession,
+  persistLoginFlow,
 } from "@/lib/auth.ts";
 import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
 import {
@@ -59,9 +58,10 @@ const toCanonicalLoopbackUrl = (url: URL) => {
 const authRequiredResponse = (url: URL) => {
   if (isApiRoute(url.pathname)) {
     const response = Response.json(
-      { error: "Authentication required." },
+      { error: "Authentication required.", code: "AUTH_REQUIRED" },
       { status: 401 },
     );
+    response.headers.set("x-luther-error-code", "auth-required");
     clearAuthCookies(response.headers);
     return response;
   }
@@ -71,15 +71,17 @@ const authRequiredResponse = (url: URL) => {
     `/login/callback?redirect=${encodeURIComponent(redirectTarget)}`,
   );
   clearAuthCookies(response.headers);
+  persistLoginFlow(response.headers, url);
   return response;
 };
 
 const unauthorizedUserResponse = (url: URL) => {
   if (isApiRoute(url.pathname)) {
     const response = Response.json(
-      { error: "This account is not authorized." },
+      { error: "This account is not authorized.", code: "AUTH_FORBIDDEN" },
       { status: 403 },
     );
+    response.headers.set("x-luther-error-code", "auth-forbidden");
     clearAuthCookies(response.headers);
     return response;
   }
@@ -93,14 +95,27 @@ const unauthorizedUserResponse = (url: URL) => {
 
 const spotifyAuthRequiredResponse = (url: URL) =>
   isApiRoute(url.pathname)
-    ? Response.json(
-      { error: "Spotify authorization required." },
-      { status: 401 },
-    )
+    ? (() => {
+      const response = Response.json(
+        {
+          error: "Spotify authorization required.",
+          code: "SPOTIFY_AUTH_REQUIRED",
+          redirectTo: "/spotify/login",
+        },
+        { status: 403 },
+      );
+      response.headers.set("x-luther-error-code", "spotify-auth-required");
+      return response;
+    })()
     : spotifyLoginRedirect();
 
 const appendHeaders = (oldResponse: Response, newResponse: Response) => {
   for (const [key, value] of [...oldResponse.headers]) {
+    if (key.toLowerCase() === "set-cookie") {
+      newResponse.headers.append(key, value);
+      continue;
+    }
+
     newResponse.headers.set(key, value);
   }
 };
@@ -121,32 +136,24 @@ const authHandler = async (
     return ctx.next();
   }
 
-  ctx.state.session = getAuthSession(ctx.req);
+  const loadedSession = await getAuthSession(ctx.req);
 
-  if (!ctx.state.session) {
+  if (!loadedSession) {
     return authRequiredResponse(url);
   }
+
+  ctx.state.session = loadedSession.session;
 
   if (!isAllowedUserEmail(ctx.state.session.user?.email)) {
     return unauthorizedUserResponse(url);
   }
 
-  if (isAccessTokenExpired(ctx.state.session)) {
-    const refreshedSession = await refreshAuthSession(ctx.state.session);
+  const nextResp = await ctx.next();
 
-    if (!refreshedSession || isAccessTokenExpired(refreshedSession)) {
-      return authRequiredResponse(url);
-    }
-
-    ctx.state.session = refreshedSession;
-
-    if (!isAllowedUserEmail(ctx.state.session.user?.email)) {
-      return unauthorizedUserResponse(url);
-    }
+  if (loadedSession.shouldPersist) {
+    persistAuthSession(nextResp.headers, ctx.url, loadedSession.token);
   }
 
-  const nextResp = await ctx.next();
-  persistAuthSession(nextResp.headers, ctx.url, ctx.state.session);
   return nextResp;
 };
 

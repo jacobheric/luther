@@ -1,4 +1,6 @@
 import { useState } from "preact/hooks";
+import Loader2 from "tabler-icons/tsx/loader-2.tsx";
+import { AuthShell } from "@/components/auth_shell.tsx";
 
 const getNeonCallbackOrigin = (origin: string) => {
   const url = new URL(origin);
@@ -60,19 +62,22 @@ export const LoginForm = (
   };
 
   return (
-    <div class="flex flex-col gap-4 justify-start my-12 mx-6">
-      {error && <p class="text-red-500">{error}</p>}
-      {clientError && <p class="text-red-500">{clientError}</p>}
+    <AuthShell
+      title={loading ? "Redirecting to Google" : "Sign in to Luther"}
+    >
       <div class="flex flex-col gap-4">
+        {error && <p class="text-sm text-red-500">{error}</p>}
+        {clientError && <p class="text-sm text-red-500">{clientError}</p>}
         <button
-          class="cursor-pointer disabled:cursor-not-allowed"
+          class="cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
           disabled={loading}
           onClick={login}
           type="button"
         >
-          {loading ? "Redirecting..." : "Login with Google"}
+          {loading && <Loader2 class="w-4 h-4 animate-spin shrink-0" />}
+          <span>{loading ? "Redirecting..." : "Continue with Google"}</span>
         </button>
       </div>
-    </div>
+    </AuthShell>
   );
 };

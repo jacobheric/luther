@@ -1,6 +1,6 @@
 import { SPOTIFY_AUTH, SPOTIFY_TOKEN_URL } from "@/lib/config.ts";
 import { type AppSession, getSessionUserId } from "@/lib/auth.ts";
-import { createNeonDataApiClient } from "@/lib/db/data_api.ts";
+import { sql } from "@/lib/db/sql.ts";
 import { getCookies, setCookie } from "@std/http/cookie";
 import { Context } from "fresh";
 
@@ -32,6 +32,9 @@ export const setSpotifyToken = async <T extends AuthContextState>(
     name: "spotifyToken",
     path: "/",
     value: encodeURIComponent(JSON.stringify(token)),
+    httpOnly: true,
+    sameSite: "Lax",
+    secure: ctx.url.protocol === "https:",
     maxAge: 400 * 24 * 60 * 60,
   });
 
@@ -41,21 +44,27 @@ export const setSpotifyToken = async <T extends AuthContextState>(
   }
 
   const userId = getSessionUserId(ctx.state.session);
-  const client = createNeonDataApiClient(ctx.state.session);
 
   //
   // so we don't prompt them to auth spotify again on a new device
-  const { error } = await client
-    .from("users")
-    .upsert(
-      [{
-        user_id: userId,
-        spotify_token: token,
-      }],
-      { onConflict: "user_id" },
-    );
-
-  if (error) {
+  try {
+    await sql`
+      insert into public.users (
+        user_id,
+        spotify_token,
+        updated_at
+      )
+      values (
+        ${userId},
+        ${JSON.stringify(token)}::jsonb,
+        now()
+      )
+      on conflict (user_id)
+      do update set
+        spotify_token = excluded.spotify_token,
+        updated_at = now()
+    `;
+  } catch (error) {
     console.error("error upserting spotify token to db", error);
   }
 };
@@ -80,24 +89,19 @@ export const getSpotifyToken = async <T extends AuthContextState>(
     return null;
   }
   const userId = getSessionUserId(ctx.state.session);
-  const client = createNeonDataApiClient(ctx.state.session);
+  try {
+    const [row] = await sql<{ spotify_token: SpotifyToken | null }[]>`
+      select spotify_token
+      from public.users
+      where user_id = ${userId}
+      limit 1
+    `;
 
-  const { data, error } = await client
-    .from("users")
-    .select("spotify_token")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
+    return row?.spotify_token ?? null;
+  } catch (error) {
     console.error("error fetching spotify token from db", error);
     return null;
   }
-
-  if (data?.spotify_token) {
-    return data.spotify_token as SpotifyToken;
-  }
-
-  return null;
 };
 
 export const refreshSpotifyToken = async (

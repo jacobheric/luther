@@ -1,15 +1,28 @@
-import { clearAuthCookies } from "@/lib/auth.ts";
+import { revokeAuthSession } from "@/lib/auth.ts";
+import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 import { define } from "@/lib/state.ts";
-import { redirect } from "@/lib/utils.ts";
+import { LogoutPage } from "@/islands/logout.tsx";
 import { deleteCookie } from "@std/http/cookie";
+import { page, PageProps } from "fresh";
 
 export const handler = define.handlers({
   GET() {
-    const resp = redirect("/login");
+    return page({
+      authUrl: getNeonAuthUrl(),
+    });
+  },
+  async POST(ctx) {
+    const headers = new Headers();
 
-    deleteCookie(resp.headers, "spotifyToken");
-    clearAuthCookies(resp.headers);
+    await revokeAuthSession(headers, ctx.req);
+    deleteCookie(headers, "spotifyToken", { path: "/" });
 
-    return resp;
+    return new Response(null, { status: 204, headers });
   },
 });
+
+export default function Logout(
+  { data }: PageProps<{ authUrl: string }>,
+) {
+  return <LogoutPage authUrl={data.authUrl} />;
+}

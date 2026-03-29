@@ -2,7 +2,6 @@ import { Modal } from "@/islands/modal.tsx";
 import { PlaylistModal } from "@/islands/playlist.tsx";
 import { Devices } from "@/islands/devices.tsx";
 import Tooltip from "@/islands/tooltip.tsx";
-import { createBrowserNeonAuthClient } from "@/lib/auth_client.ts";
 import type {
   ChatMessage,
   ChatStreamEvent,
@@ -62,6 +61,7 @@ const currentPath = () =>
   `${globalThis.location.pathname}${globalThis.location.search}` || "/";
 const loginRedirectPath = () =>
   `/login/callback?redirect=${encodeURIComponent(currentPath())}`;
+const spotifyLoginPath = "/spotify/login";
 const iconButtonClass =
   "cursor-pointer !p-0 h-7 w-7 inline-flex items-center justify-center !border-0 !bg-transparent !rounded-none text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-35 disabled:cursor-not-allowed";
 const iconClass = "w-4 h-4 shrink-0";
@@ -159,13 +159,9 @@ const toPlaylistSummary = (value: unknown): PlaylistSummary | null => {
   };
 };
 
-type ChatProps = {
-  authUrl: string;
-};
-
 type NavPanel = "threads" | "devices" | "playlists";
 
-export const Chat = ({ authUrl }: ChatProps) => {
+export const Chat = () => {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
   const [messages, setMessages] = useState<MessageView[]>([]);
@@ -193,7 +189,6 @@ export const Chat = ({ authUrl }: ChatProps) => {
   const [loadingPlaylists, setLoadingPlaylists] = useState(false);
   const [playlistRemixId, setPlaylistRemixId] = useState<string | null>(null);
   const authRedirecting = useRef(false);
-  const sessionSyncPromise = useRef<Promise<boolean> | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
   const previousMessageMetricsRef = useRef<MessageMetrics>({
@@ -268,66 +263,30 @@ export const Chat = ({ authUrl }: ChatProps) => {
     globalThis.location.href = loginRedirectPath();
   };
 
-  const syncAppSession = async () => {
-    if (sessionSyncPromise.current) {
-      return await sessionSyncPromise.current;
+  const onSpotifyAuthRequired = () => {
+    if (authRedirecting.current) {
+      return;
     }
 
-    const syncTask = (async () => {
-      try {
-        const auth = createBrowserNeonAuthClient(authUrl);
-        const { data, error } = await auth.getSession({
-          query: {
-            disableCookieCache: true,
-          },
-        });
-
-        if (error || !data?.session || !data?.user) {
-          return false;
-        }
-
-        const response = await fetch("/login/callback", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-
-        return response.ok;
-      } catch (error) {
-        console.error("failed to synchronize app session", error);
-        return false;
-      }
-    })();
-
-    sessionSyncPromise.current = syncTask;
-    const didSync = await syncTask;
-    sessionSyncPromise.current = null;
-    return didSync;
+    authRedirecting.current = true;
+    setError("Spotify authorization required. Redirecting...");
+    globalThis.location.href = spotifyLoginPath;
   };
 
   const fetchWithSessionRecovery = async (
     input: string,
     init?: RequestInit,
-  ) => {
-    const response = await fetch(input, init);
-
-    if (response.status !== 401) {
-      return response;
-    }
-
-    const didSync = await syncAppSession();
-
-    if (!didSync) {
-      return response;
-    }
-
-    return await fetch(input, init);
-  };
+  ) => await fetch(input, init);
 
   const requireOk = (response: Response, message: string) => {
-    if (response.status === 401) {
+    const errorCode = response.headers.get("x-luther-error-code");
+
+    if (errorCode === "spotify-auth-required") {
+      onSpotifyAuthRequired();
+      throw new Error("spotify authorization required");
+    }
+
+    if (response.status === 401 || errorCode === "auth-required") {
       onAuthRequired();
       throw new Error("authentication required");
     }

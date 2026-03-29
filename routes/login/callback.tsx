@@ -1,68 +1,51 @@
 import {
-  type AppSession,
-  type AppUser,
+  clearLoginFlow,
+  createAuthSession,
+  getCallbackUser,
+  hasLoginFlow,
   isAllowedUserEmail,
-  persistAuthSession,
+  persistLoginFlow,
 } from "@/lib/auth.ts";
 import { getNeonAuthUrl } from "@/lib/neon_auth.ts";
 import { define } from "@/lib/state.ts";
 import { page, PageProps } from "fresh";
 import { LoginCallback } from "@/islands/login_callback.tsx";
+import { toSafeRedirectPath } from "@/lib/utils.ts";
 
-const getRedirectTarget = (url: URL) => url.searchParams.get("redirect") ?? "/";
-
-//
-// Better Auth's native getSession() returns { session: { token, ... }, user: { id, email, name, ... } }
-const firstNonEmpty = (values: unknown[]) =>
-  values.find((value): value is string =>
-    typeof value === "string" && value.length > 0
-  ) ?? "";
-
-const toAppSession = (
-  body: Record<string, unknown>,
-): AppSession | null => {
-  const session = body.session as Record<string, unknown> | undefined;
-  const user = body.user as Partial<AppUser> | undefined;
-  const token = firstNonEmpty([
-    session?.token,
-    session?.access_token,
-    body.access_token,
-  ]);
-  const refreshToken = firstNonEmpty([
-    session?.refreshToken,
-    session?.refresh_token,
-    body.refresh_token,
-  ]);
-
-  if (!token || !user?.id) {
-    return null;
-  }
-
-  return {
-    access_token: token,
-    refresh_token: refreshToken,
-    user: { id: user.id, email: user.email, name: user.name },
-  };
-};
+const getRedirectTarget = (url: URL) =>
+  toSafeRedirectPath(url.searchParams.get("redirect"));
 
 export const handler = define.handlers({
   GET(ctx) {
     const error = ctx.url.searchParams.get("error") ?? undefined;
+    const headers = new Headers();
 
-    return page({ authUrl: getNeonAuthUrl(), error });
+    persistLoginFlow(headers, ctx.url);
+
+    return page({ authUrl: getNeonAuthUrl(), error }, { headers });
   },
   async POST(ctx) {
-    const body = await ctx.req.json();
-    const appSession = toAppSession(body);
+    const body = await ctx.req.json().catch(() => null) as
+      | Record<string, unknown>
+      | null;
 
-    if (!appSession) {
+    if (!body || !hasLoginFlow(ctx.req)) {
       return Response.json(
         { error: "OAuth callback did not return a valid session." },
         { status: 400 },
       );
     }
 
-    if (!isAllowedUserEmail(appSession.user.email)) {
+    const user = getCallbackUser(body);
+
+    if (!user) {
+      return Response.json(
+        { error: "Failed to read the Google login session." },
+        { status: 401 },
+      );
+    }
+
+    if (!isAllowedUserEmail(user.email)) {
       return Response.json(
         { error: "Sorry, not for you!" },
         { status: 403 },
@@ -70,7 +53,8 @@ export const handler = define.handlers({
     }
 
     const headers = new Headers();
-    persistAuthSession(headers, ctx.url, appSession);
+    clearLoginFlow(headers);
+    await createAuthSession(headers, ctx.url, user);
 
     return Response.json(
       { redirectTo: getRedirectTarget(ctx.url) },

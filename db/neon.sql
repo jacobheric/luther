@@ -1,3 +1,14 @@
+create table if not exists public.app_sessions (
+  token_hash text primary key,
+  user_id uuid not null references neon_auth.user(id) on delete cascade,
+  user_email text,
+  user_name text,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
 create table if not exists public.users (
   user_id uuid primary key references neon_auth.user(id) on delete cascade,
   spotify_token jsonb,
@@ -35,6 +46,9 @@ create table if not exists public.chat_messages (
 
 create index if not exists searches_user_id_id_idx
   on public.searches (user_id, id desc);
+
+create index if not exists app_sessions_user_id_idx
+  on public.app_sessions (user_id);
 
 create index if not exists chat_threads_user_updated_idx
   on public.chat_threads (user_id, updated_at desc);
