@@ -21,8 +21,13 @@ type MessageRow = {
   created_at: string | Date;
 };
 
-const parseSongCards = (value: unknown): TrackLite[] | null =>
-  Array.isArray(value) ? value as TrackLite[] : null;
+const parseSongCards = (value: unknown): TrackLite[] | null => {
+  //
+  // postgres may return jsonb as a pre-parsed JS value or as a raw string
+  // depending on the query mode (prepare: false uses simple protocol).
+  const data = typeof value === "string" ? JSON.parse(value) : value;
+  return Array.isArray(data) ? data as TrackLite[] : null;
+};
 
 const toIsoString = (value: string | Date) =>
   value instanceof Date ? value.toISOString() : new Date(value).toISOString();

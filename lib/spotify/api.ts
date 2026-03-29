@@ -38,7 +38,7 @@ type SpotifyAccessToken = {
 
 const DEFAULT_MARKET = "US";
 const DEFAULT_RETRIES = 2;
-const SEARCH_LIMIT = 5;
+const SEARCH_LIMIT = 10;
 const MAX_PLAYLIST_REMIX_SONGS = 80;
 
 const pareTrack = (track: Track): TrackLite => {
@@ -179,24 +179,11 @@ export const searchSong = async (
     return null;
   }
 
-  const query = encodeURIComponent(
-    [
-      `track:${song}`,
-      `artist:${artist}`,
-    ].filter(Boolean).join(" "),
-  );
-
-  const searchQuery =
-    `https://api.spotify.com/v1/search?q=${query}&type=track&limit=${SEARCH_LIMIT}&market=${market}`;
-
-  const response = await spotifyFetch(
-    searchQuery,
-    {
-      headers: {
-        "Authorization": `Bearer ${token.access_token}`,
-      },
-    },
-  );
+  const url =
+    `https://api.spotify.com/v1/search?q=${encodeURIComponent(`${song} ${artist}`)}&type=track&limit=${SEARCH_LIMIT}&market=${market}`;
+  const response = await spotifyFetch(url, {
+    headers: { "Authorization": `Bearer ${token.access_token}` },
+  });
 
   if (!response.ok) {
     console.error("error searching for song", response);
@@ -204,7 +191,6 @@ export const searchSong = async (
   }
 
   const result = await response.json();
-
   const tracks = Array.isArray(result?.tracks?.items)
     ? result.tracks.items as Track[]
     : [];

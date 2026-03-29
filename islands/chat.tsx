@@ -23,6 +23,7 @@ import Messages from "tabler-icons/tsx/messages.tsx";
 import DeviceSpeaker from "tabler-icons/tsx/device-speaker.tsx";
 import X from "tabler-icons/tsx/x.tsx";
 import ArrowUp from "tabler-icons/tsx/arrow-up.tsx";
+import Microphone from "tabler-icons/tsx/microphone.tsx";
 import Edit from "tabler-icons/tsx/edit.tsx";
 import Playlist from "tabler-icons/tsx/playlist.tsx";
 
@@ -66,6 +67,9 @@ const spotifyLoginPath = "/spotify/login";
 const iconButtonClass =
   "cursor-pointer !p-0 h-7 w-7 inline-flex items-center justify-center !border-0 !bg-transparent !rounded-none text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-35 disabled:cursor-not-allowed";
 const iconClass = "w-4 h-4 shrink-0";
+const floatingButtonClass =
+  "cursor-pointer !p-0 h-8 w-8 inline-flex items-center justify-center !border-0 text-gray-500 hover:text-gray-900 dark:hover:text-white";
+const floatingIconClass = "w-[18px] h-[18px] shrink-0";
 
 const parseNdjson = async (
   response: Response,
@@ -185,6 +189,8 @@ export const Chat = () => {
   const [error, setError] = useState<string | null>(null);
   const [navOverlayOpen, setNavOverlayOpen] = useState(false);
   const [navPanel, setNavPanel] = useState<NavPanel>("threads");
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasSpeech, setHasSpeech] = useState(false);
   const [playlists, setPlaylists] = useState<PlaylistSummary[]>([]);
   const [playlistQuery, setPlaylistQuery] = useState("");
   const [loadingPlaylists, setLoadingPlaylists] = useState(false);
@@ -192,12 +198,17 @@ export const Chat = () => {
   const authRedirecting = useRef(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const speechBaseRef = useRef("");
   const previousMessageMetricsRef = useRef<MessageMetrics>({
     count: 0,
     contentChars: 0,
     songCards: 0,
     threadId: null,
   });
+  const previousSongCardCountsRef = useRef<Map<number | string, number>>(
+    new Map(),
+  );
 
   const hasSongs = useMemo(
     () =>
@@ -210,7 +221,7 @@ export const Chat = () => {
     () => devices.some((device) => device.id === selectedDeviceId),
     [devices, selectedDeviceId],
   );
-  const deviceQuickButtonClass = `${iconButtonClass} ${
+  const deviceQuickButtonClass = `${floatingButtonClass} ${
     hasSelectedDevice
       ? "!text-emerald-600 hover:!text-emerald-500 dark:!text-emerald-400 dark:hover:!text-emerald-300"
       : devicesLoaded
@@ -405,6 +416,55 @@ export const Chat = () => {
   };
 
   useEffect(() => {
+    setHasSpeech(
+      "SpeechRecognition" in globalThis || "webkitSpeechRecognition" in globalThis,
+    );
+  }, []);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognitionAPI =
+      (globalThis as unknown as { SpeechRecognition?: typeof SpeechRecognition })
+        .SpeechRecognition ??
+      (globalThis as unknown as {
+        webkitSpeechRecognition?: typeof SpeechRecognition;
+      }).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionAPI) return;
+
+    const recognition = new SpeechRecognitionAPI();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    speechBaseRef.current = prompt;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join("");
+      const base = speechBaseRef.current;
+      setPrompt(base + (base ? " " : "") + transcript);
+    };
+
+    const onEnd = () => {
+      setIsRecording(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onend = onEnd;
+    recognition.onerror = onEnd;
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
+  useEffect(() => {
     void (async () => {
       try {
         const nextThreads = await fetchThreads();
@@ -482,8 +542,36 @@ export const Chat = () => {
       !hasTextChange;
 
     if (hasOnlySongCardChange) {
+      const previousCounts = previousSongCardCountsRef.current;
+      const changedMessage = messages.find((m) => {
+        const current = m.song_cards?.length ?? 0;
+        const previous = previousCounts.get(m.id) ?? 0;
+        return current > 0 && current !== previous;
+      });
+
+      if (changedMessage) {
+        const el = messageListRef.current?.querySelector(
+          `[data-song-cards="${changedMessage.id}"]`,
+        );
+        const container = messageListRef.current;
+        if (el && container) {
+          const offset =
+            el.getBoundingClientRect().top -
+            container.getBoundingClientRect().top -
+            container.clientHeight * 0.5;
+          container.scrollBy({ top: offset, behavior: "smooth" });
+        }
+      }
+
+      previousSongCardCountsRef.current = new Map(
+        messages.map((m) => [m.id, m.song_cards?.length ?? 0]),
+      );
       return;
     }
+
+    previousSongCardCountsRef.current = new Map(
+      messages.map((m) => [m.id, m.song_cards?.length ?? 0]),
+    );
 
     if (!shouldAutoScrollRef.current && !isNewMessage && !threadChanged) {
       return;
@@ -1129,35 +1217,35 @@ export const Chat = () => {
       )}
 
       <div
-        className="fixed z-[70] left-1 sm:left-2 top-14 sm:top-[3.75rem] flex flex-col gap-1"
+        className="fixed z-[70] flex flex-col gap-1"
         style={{
-          left: "calc(env(safe-area-inset-left) + 0.25rem)",
-          top: "calc(env(safe-area-inset-top) + 3.5rem + 0.25rem)",
+          left: "calc(env(safe-area-inset-left) + 0.5rem)",
+          top: "calc(env(safe-area-inset-top) + 3.5rem + 0.5rem)",
         }}
       >
-        <Tooltip tooltip="New conversation" className="top-8 left-0">
+        <Tooltip tooltip="New conversation" className="top-9 left-0">
           <button
             type="button"
-            className={iconButtonClass}
+            className={`${floatingButtonClass} !bg-black/10 dark:!bg-white/10 hover:!bg-black/20 dark:hover:!bg-white/20 !rounded-xl`}
             onClick={resetForNewChat}
             aria-label="Start a new conversation"
           >
-            <Edit className={iconClass} />
+            <Edit className={floatingIconClass} />
           </button>
         </Tooltip>
-        <Tooltip tooltip="Devices" className="top-8 left-0">
+        <Tooltip tooltip="Devices" className="top-9 left-0">
           <button
             type="button"
-            className={deviceQuickButtonClass}
+            className={`${deviceQuickButtonClass} !bg-black/10 dark:!bg-white/10 hover:!bg-black/20 dark:hover:!bg-white/20 !rounded-xl`}
             onClick={openDevicesPanel}
             aria-label="Open devices"
           >
-            <DeviceSpeaker className={iconClass} />
+            <DeviceSpeaker className={floatingIconClass} />
           </button>
         </Tooltip>
       </div>
 
-      <section className="relative z-20 flex-1 min-h-0 flex flex-col overflow-x-clip">
+      <section className="relative z-20 flex-1 min-w-0 min-h-0 flex flex-col overflow-x-clip">
         <div
           ref={messageListRef}
           className="scrollbar-none p-2 flex-1 min-h-0 overflow-y-auto overflow-x-clip flex flex-col gap-4"
@@ -1195,7 +1283,10 @@ export const Chat = () => {
 
               {message.role === "assistant" &&
                 (message.song_cards?.length ?? 0) > 0 && (
-                <div className="flex flex-col gap-2 pl-3 border-l border-gray-200 dark:border-gray-700">
+                <div
+                  data-song-cards={message.id}
+                  className="flex flex-col gap-2 pl-3 border-l border-gray-200 dark:border-gray-700"
+                >
                   <div className="flex flex-row flex-wrap gap-1.5">
                     <Tooltip tooltip="Play all now" className="top-9 left-0">
                       <button
@@ -1269,7 +1360,7 @@ export const Chat = () => {
           ))}
         </div>
 
-        <div className="sticky bottom-0 pt-1 pb-1 px-2 max-w-full overflow-x-clip bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col gap-2">
+        <div className="sticky bottom-0 pt-1 pb-1 px-2 w-full overflow-x-clip bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col gap-2">
           {error && <div className="text-sm text-red-600">{error}</div>}
           <div className="relative">
             <textarea
@@ -1281,7 +1372,27 @@ export const Chat = () => {
                 const target = event.target as HTMLTextAreaElement;
                 setPrompt(target.value);
               }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" || event.shiftKey) {
+                  return;
+                }
+                event.preventDefault();
+                void submit();
+              }}
             />
+            {hasSpeech && (
+              <button
+                type="button"
+                className={`absolute top-2 right-2 !p-1 !border-0 !bg-transparent !rounded-full transition-all ${
+                  isRecording
+                    ? "!text-red-500 animate-pulse"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white opacity-50 hover:opacity-100"
+                }`}
+                onClick={toggleRecording}
+              >
+                <Microphone className="w-4 h-4" />
+              </button>
+            )}
             <button
               type="button"
               className="absolute bottom-2 right-2 !p-1 !border-0 !bg-transparent !rounded-full disabled:opacity-25 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity"

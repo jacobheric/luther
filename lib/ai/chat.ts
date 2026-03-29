@@ -137,12 +137,12 @@ const ackRecommendationToolCalls = async (
   }));
 
   return await openai.responses.create({
-    model: "gpt-5.4-mini",
+    model: "gpt-5.4",
     store: true,
     previous_response_id: response.id,
     instructions: TOOL_RESPONSE_PROMPT,
     input,
-    max_output_tokens: 180,
+    max_output_tokens: 300,
   });
 };
 
@@ -262,7 +262,7 @@ export const streamAssistantTurn = async (
   }
 
   const stream = openai.responses.stream({
-    model: "gpt-5.4-mini",
+    model: "gpt-5.4",
     store: true,
     instructions: buildSystemPrompt(),
     input: message,
