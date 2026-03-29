@@ -18,11 +18,12 @@ const getRedirectTarget = (url: URL) =>
 export const handler = define.handlers({
   GET(ctx) {
     const error = ctx.url.searchParams.get("error") ?? undefined;
+    const redirect = getRedirectTarget(ctx.url);
     const headers = new Headers();
 
     persistLoginFlow(headers, ctx.url);
 
-    return page({ authUrl: getNeonAuthUrl(), error }, { headers });
+    return page({ authUrl: getNeonAuthUrl(), error, redirect }, { headers });
   },
   async POST(ctx) {
     const body = await ctx.req.json().catch(() => null) as
@@ -64,7 +65,13 @@ export const handler = define.handlers({
 });
 
 export default function LoginCallbackRoute(
-  { data }: PageProps<{ authUrl: string; error?: string }>,
+  { data }: PageProps<{ authUrl: string; error?: string; redirect: string }>,
 ) {
-  return <LoginCallback authUrl={data.authUrl} error={data?.error} />;
+  return (
+    <LoginCallback
+      authUrl={data.authUrl}
+      error={data?.error}
+      redirect={data.redirect}
+    />
+  );
 }

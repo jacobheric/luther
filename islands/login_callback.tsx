@@ -8,17 +8,13 @@ const SESSION_VERIFIER_PARAM = "neon_auth_session_verifier";
 type CallbackState = {
   authUrl: string;
   error?: string;
+  redirect: string;
 };
 
 type LoginStatus = "loading" | "error";
 
-const getRedirectPath = () => {
-  const currentUrl = new URL(globalThis.location.href);
-  return currentUrl.searchParams.get("redirect") ?? "/";
-};
-
 export const LoginCallback = (
-  { authUrl, error: initialError }: CallbackState,
+  { authUrl, error: initialError, redirect }: CallbackState,
 ) => {
   const [status, setStatus] = useState<LoginStatus>(
     initialError ? "error" : "loading",
@@ -43,7 +39,6 @@ export const LoginCallback = (
 
     const completeLogin = async () => {
       const currentUrl = new URL(globalThis.location.href);
-      const redirect = getRedirectPath();
       const loginUrl = `/login?redirect=${encodeURIComponent(redirect)}`;
       const auth = createBrowserNeonAuthClient(authUrl);
       const hasVerifier = currentUrl.searchParams.has(SESSION_VERIFIER_PARAM);
@@ -52,7 +47,7 @@ export const LoginCallback = (
 
       if (authError || !data?.session || !data?.user) {
         if (!hasVerifier) {
-          globalThis.location.href = loginUrl;
+          globalThis.location.replace(loginUrl);
           return;
         }
 
@@ -75,7 +70,7 @@ export const LoginCallback = (
       }
 
       const body = await response.json();
-      globalThis.location.href = body.redirectTo ?? "/";
+      globalThis.location.replace(body.redirectTo ?? "/");
     };
 
     void completeLogin();
@@ -83,7 +78,9 @@ export const LoginCallback = (
     return () => {
       cancelled = true;
     };
-  }, [authUrl, initialError]);
+  }, [authUrl, initialError, redirect]);
+
+  const restartUrl = `/login?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <AuthShell
@@ -96,15 +93,18 @@ export const LoginCallback = (
         ? (
           <div class="flex flex-col gap-4">
             <p class="text-sm text-red-500">{error}</p>
-            <a href="/login" class="text-sm">
-              Back to login
-            </a>
+            <div class="flex flex-row flex-wrap gap-3 text-sm">
+              <a href={restartUrl}>Start over</a>
+              <a href="/logout">Logout</a>
+            </div>
           </div>
         )
         : (
-          <div class="flex flex-row items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-            <Loader2 class="w-4 h-4 animate-spin shrink-0" />
-            <span>Completing Google sign-in...</span>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-row items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+              <Loader2 class="w-4 h-4 animate-spin shrink-0" />
+              <span>Completing Google sign-in...</span>
+            </div>
           </div>
         )}
     </AuthShell>

@@ -43,10 +43,6 @@ export const Nav = (
     };
   }, [dropdownRef]);
 
-  if (pathname === "/login" || pathname === "/logout") {
-    return null;
-  }
-
   return (
     <div
       ref={dropdownRef}
@@ -122,7 +118,7 @@ export const Nav = (
                   </span>
                 </a>
               )}
-            {pathname !== "/logout" && pathname !== "/login" &&
+            {pathname !== "/logout" &&
               (
                 <a
                   href="/logout"
