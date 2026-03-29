@@ -22,6 +22,7 @@ import ArrowsShuffle from "tabler-icons/tsx/arrows-shuffle.tsx";
 import Messages from "tabler-icons/tsx/messages.tsx";
 import DeviceSpeaker from "tabler-icons/tsx/device-speaker.tsx";
 import X from "tabler-icons/tsx/x.tsx";
+import ArrowUp from "tabler-icons/tsx/arrow-up.tsx";
 import Edit from "tabler-icons/tsx/edit.tsx";
 import Playlist from "tabler-icons/tsx/playlist.tsx";
 
@@ -1270,24 +1271,26 @@ export const Chat = () => {
 
         <div className="sticky bottom-0 pt-1 pb-1 px-2 max-w-full overflow-x-clip bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col gap-2">
           {error && <div className="text-sm text-red-600">{error}</div>}
-          <textarea
-            rows={2}
-            value={prompt}
-            placeholder="What do you want to hear?"
-            className="w-full max-w-full p-2.5 text-base sm:text-sm resize-none leading-5"
-            onInput={(event) => {
-              const target = event.target as HTMLTextAreaElement;
-              setPrompt(target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" || event.shiftKey) {
-                return;
-              }
-
-              event.preventDefault();
-              void submit();
-            }}
-          />
+          <div className="relative">
+            <textarea
+              rows={2}
+              value={prompt}
+              placeholder="What do you want to hear?"
+              className="w-full max-w-full p-2.5 pr-10 text-base sm:text-sm resize-none leading-5"
+              onInput={(event) => {
+                const target = event.target as HTMLTextAreaElement;
+                setPrompt(target.value);
+              }}
+            />
+            <button
+              type="button"
+              className="absolute bottom-2 right-2 !p-1 !border-0 !bg-transparent !rounded-full disabled:opacity-25 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity"
+              disabled={submitting || !prompt.trim()}
+              onClick={() => void submit()}
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </section>
 
