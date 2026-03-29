@@ -43,7 +43,7 @@ export default function SpotifyLogin(
           music and play music.
         </div>
         <div className="flex justify-center">
-          <button type="submit">
+          <button type="submit" className="cursor-pointer">
             Authorize Luther on Spotify
           </button>
         </div>

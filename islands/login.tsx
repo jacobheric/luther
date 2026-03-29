@@ -62,9 +62,7 @@ export const LoginForm = (
   };
 
   return (
-    <AuthShell
-      title={loading ? "Redirecting to Google" : "Sign in to Luther"}
-    >
+    <AuthShell title="Sign in to Luther">
       <div class="flex flex-col gap-4">
         {error && <p class="text-sm text-red-500">{error}</p>}
         {clientError && <p class="text-sm text-red-500">{clientError}</p>}
@@ -75,7 +73,7 @@ export const LoginForm = (
           type="button"
         >
           {loading && <Loader2 class="w-4 h-4 animate-spin shrink-0" />}
-          <span>{loading ? "Redirecting..." : "Continue with Google"}</span>
+          <span>Continue with Google</span>
         </button>
       </div>
     </AuthShell>

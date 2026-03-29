@@ -7,7 +7,6 @@ import {
   getAuthSession,
   isAllowedUserEmail,
   persistAuthSession,
-  persistLoginFlow,
 } from "@/lib/auth.ts";
 import { spotifyLoginRedirect } from "@/lib/spotify/api.ts";
 import {
@@ -68,10 +67,9 @@ const authRequiredResponse = (url: URL) => {
 
   const redirectTarget = `${url.pathname}${url.search}`;
   const response = redirect(
-    `/login/callback?redirect=${encodeURIComponent(redirectTarget)}`,
+    `/login?redirect=${encodeURIComponent(redirectTarget)}`,
   );
   clearAuthCookies(response.headers);
-  persistLoginFlow(response.headers, url);
   return response;
 };
 

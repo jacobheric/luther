@@ -118,19 +118,14 @@ export const Nav = (
                   </span>
                 </a>
               )}
-            {pathname !== "/logout" &&
-              (
-                <a
-                  href="/logout"
-                  class={menuItemClass}
-                  onClick={() => setShowDropdown(false)}
-                >
-                  <span class={menuItemContentClass}>
-                    <Logout class={menuIconClass} />
-                    Logout
-                  </span>
-                </a>
-              )}
+            <form method="POST" action="/logout">
+              <button type="submit" class={menuItemClass}>
+                <span class={menuItemContentClass}>
+                  <Logout class={menuIconClass} />
+                  Logout
+                </span>
+              </button>
+            </form>
           </div>
         )}
     </div>

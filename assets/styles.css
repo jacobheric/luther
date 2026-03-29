@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@view-transition {
+  navigation: auto;
+}
+
 @layer base {
   a {
     @apply hover:no-underline underline underline-offset-4 decoration-1;
@@ -34,6 +38,15 @@ button {
 button[type="submit"] {
   @apply border border-gray-200 bg-gray-100 dark:bg-gray-700 p-3 rounded
     disabled:cursor-not-allowed;
+}
+
+.auth-defer {
+  opacity: 0;
+  animation: auth-defer-reveal 0.2s ease 0.35s forwards;
+}
+
+@keyframes auth-defer-reveal {
+  to { opacity: 1; }
 }
 
 .scrollbar-none {

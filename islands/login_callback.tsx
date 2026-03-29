@@ -21,6 +21,17 @@ export const LoginCallback = (
   );
   const [error, setError] = useState(initialError ?? null);
 
+  //
+  // Start invisible so the page never flashes during a successful redirect.
+  // Only reveal when there is an error to show.
+  const [visible, setVisible] = useState(!!initialError);
+
+  useEffect(() => {
+    if (status === "error") {
+      setVisible(true);
+    }
+  }, [status]);
+
   useEffect(() => {
     if (initialError) {
       return;
@@ -83,30 +94,32 @@ export const LoginCallback = (
   const restartUrl = `/login?redirect=${encodeURIComponent(redirect)}`;
 
   return (
-    <AuthShell
-      title={status === "error" ? "Sign-in failed" : "Signing you in"}
-      body={status === "error"
-        ? "The Google login could not be completed."
-        : "Finalizing your session and sending you back into the app."}
-    >
-      {status === "error"
-        ? (
-          <div class="flex flex-col gap-4">
-            <p class="text-sm text-red-500">{error}</p>
-            <div class="flex flex-row flex-wrap gap-3 text-sm">
-              <a href={restartUrl}>Start over</a>
-              <a href="/logout">Logout</a>
+    <div style={{ visibility: visible ? "visible" : "hidden" }}>
+      <AuthShell
+        title={status === "error" ? "Sign-in failed" : "Signing you in"}
+        body={status === "error"
+          ? "The Google login could not be completed."
+          : "Finalizing your session and sending you back into the app."}
+      >
+        {status === "error"
+          ? (
+            <div class="flex flex-col gap-4">
+              <p class="text-sm text-red-500">{error}</p>
+              <div class="flex flex-row flex-wrap gap-3 text-sm">
+                <a href={restartUrl}>Start over</a>
+                <a href="/logout">Logout</a>
+              </div>
             </div>
-          </div>
-        )
-        : (
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-row items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-              <Loader2 class="w-4 h-4 animate-spin shrink-0" />
-              <span>Completing Google sign-in...</span>
+          )
+          : (
+            <div class="flex flex-col gap-4">
+              <div class="flex flex-row items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <Loader2 class="w-4 h-4 animate-spin shrink-0" />
+                <span>Completing Google sign-in...</span>
+              </div>
             </div>
-          </div>
-        )}
-    </AuthShell>
+          )}
+      </AuthShell>
+    </div>
   );
 };
