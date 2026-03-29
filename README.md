@@ -3,7 +3,7 @@
 Spotify's AI DJ X is nice enough...if you want a very repetitive listening
 experience. If you want more control, Listen to Luther instead!
 
-Luther lives at [listentoluther.com](https://listentoluther.com).
+**warning: mostly vibe coded at this point**
 
 Set the following environment variables in `.env`:
 
