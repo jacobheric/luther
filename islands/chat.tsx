@@ -17,7 +17,8 @@ import Plus from "tabler-icons/tsx/plus.tsx";
 import PlayerPlay from "tabler-icons/tsx/player-play.tsx";
 import PlayerTrackNext from "tabler-icons/tsx/player-track-next.tsx";
 import PlaylistAdd from "tabler-icons/tsx/playlist-add.tsx";
-import BrandSpotify from "tabler-icons/tsx/brand-spotify.tsx";
+import Copy from "tabler-icons/tsx/copy.tsx";
+import Check from "tabler-icons/tsx/check.tsx";
 import ArrowsShuffle from "tabler-icons/tsx/arrows-shuffle.tsx";
 import Messages from "tabler-icons/tsx/messages.tsx";
 import DeviceSpeaker from "tabler-icons/tsx/device-speaker.tsx";
@@ -186,6 +187,7 @@ export const Chat = () => {
   >(null);
   const [remixPrompt, setRemixPrompt] = useState("");
   const [actionKey, setActionKey] = useState<string | null>(null);
+  const [copiedUri, setCopiedUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [navOverlayOpen, setNavOverlayOpen] = useState(false);
   const [navPanel, setNavPanel] = useState<NavPanel>("threads");
@@ -989,18 +991,23 @@ export const Chat = () => {
               <PlaylistAdd className={iconClass} />
             </button>
           </Tooltip>
-          <Tooltip tooltip="Open in Spotify" className="top-9 right-0">
+          <Tooltip tooltip="Copy link" className="top-9 right-0">
             <button
               type="button"
-              className={iconButtonClass}
-              onClick={() =>
-                globalThis.open(
-                  song.external_urls.spotify,
-                  "_blank",
-                  "noopener,noreferrer",
-                )}
+              className={`${iconButtonClass} ${
+                copiedUri === song.uri
+                  ? "!text-emerald-500 dark:!text-emerald-400"
+                  : ""
+              }`}
+              onClick={() => {
+                void navigator.clipboard.writeText(song.external_urls.spotify);
+                setCopiedUri(song.uri);
+                setTimeout(() => setCopiedUri(null), 1500);
+              }}
             >
-              <BrandSpotify className={iconClass} />
+              {copiedUri === song.uri
+                ? <Check className={iconClass} />
+                : <Copy className={iconClass} />}
             </button>
           </Tooltip>
         </div>
@@ -1383,23 +1390,23 @@ export const Chat = () => {
             {hasSpeech && (
               <button
                 type="button"
-                className={`absolute top-2 right-2 !p-1 !border-0 !bg-transparent !rounded-full transition-all ${
+                className={`absolute top-2 right-2 !p-1.5 !border-0 !bg-transparent !rounded-full transition-all ${
                   isRecording
                     ? "!text-red-500 animate-pulse"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white opacity-50 hover:opacity-100"
                 }`}
                 onClick={toggleRecording}
               >
-                <Microphone className="w-4 h-4" />
+                <Microphone className="w-5 h-5" />
               </button>
             )}
             <button
               type="button"
-              className="absolute bottom-2 right-2 !p-1 !border-0 !bg-transparent !rounded-full disabled:opacity-25 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity"
+              className="absolute bottom-2 right-2 !p-1.5 !border-0 !bg-transparent !rounded-full disabled:opacity-25 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-opacity"
               disabled={submitting || !prompt.trim()}
               onClick={() => void submit()}
             >
-              <ArrowUp className="w-4 h-4" />
+              <ArrowUp className="w-5 h-5" />
             </button>
           </div>
         </div>
