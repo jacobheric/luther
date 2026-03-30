@@ -32,6 +32,39 @@ type MessageView = Omit<ChatMessage, "id"> & {
   id: number | string;
 };
 
+type SpeechRecognitionConstructor = {
+  new (): SpeechRecognition;
+  prototype: SpeechRecognition;
+};
+
+declare global {
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onend: ((this: SpeechRecognition, event: Event) => void) | null;
+    onerror: ((this: SpeechRecognition, event: Event) => void) | null;
+    onresult:
+      | ((this: SpeechRecognition, event: SpeechRecognitionEvent) => void)
+      | null;
+    start(): void;
+    stop(): void;
+  }
+
+  interface SpeechRecognitionEvent extends Event {
+    readonly resultIndex: number;
+    readonly results: SpeechRecognitionResultList;
+  }
+
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+
+  var SpeechRecognition: SpeechRecognitionConstructor | undefined;
+  var webkitSpeechRecognition: SpeechRecognitionConstructor | undefined;
+}
+
 type RemixSeedSong = {
   name: string;
   artist: string;
@@ -419,7 +452,9 @@ export const Chat = () => {
 
   useEffect(() => {
     setHasSpeech(
-      "SpeechRecognition" in globalThis || "webkitSpeechRecognition" in globalThis,
+      Boolean(
+        globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition,
+      ),
     );
   }, []);
 
@@ -429,14 +464,12 @@ export const Chat = () => {
       return;
     }
 
-    const SpeechRecognitionAPI =
-      (globalThis as unknown as { SpeechRecognition?: typeof SpeechRecognition })
-        .SpeechRecognition ??
-      (globalThis as unknown as {
-        webkitSpeechRecognition?: typeof SpeechRecognition;
-      }).webkitSpeechRecognition;
+    const SpeechRecognitionAPI = globalThis.SpeechRecognition ??
+      globalThis.webkitSpeechRecognition;
 
-    if (!SpeechRecognitionAPI) return;
+    if (!SpeechRecognitionAPI) {
+      return;
+    }
 
     const recognition = new SpeechRecognitionAPI();
     recognition.continuous = false;
@@ -446,9 +479,10 @@ export const Chat = () => {
     speechBaseRef.current = prompt;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0].transcript)
-        .join("");
+      const transcript = Array.from(
+        { length: event.results.length },
+        (_, index) => event.results.item(index).item(0).transcript,
+      ).join("");
       const base = speechBaseRef.current;
       setPrompt(base + (base ? " " : "") + transcript);
     };
@@ -557,8 +591,7 @@ export const Chat = () => {
         );
         const container = messageListRef.current;
         if (el && container) {
-          const offset =
-            el.getBoundingClientRect().top -
+          const offset = el.getBoundingClientRect().top -
             container.getBoundingClientRect().top -
             container.clientHeight * 0.5;
           container.scrollBy({ top: offset, behavior: "smooth" });
@@ -1002,7 +1035,8 @@ export const Chat = () => {
               onClick={() => {
                 void navigator.clipboard.writeText(song.external_urls.spotify);
                 setCopiedUri(song.uri);
-                setTimeout(() => setCopiedUri(null), 1500);
+                setTimeout(() =>
+                  setCopiedUri(null), 1500);
               }}
             >
               {copiedUri === song.uri
@@ -1304,9 +1338,7 @@ export const Chat = () => {
                           void withAction(`${message.id}-play-all`, async () =>
                             await sendSpotifyAction({
                               endpoint: "/api/spotify/play",
-                              uris: message.song_cards!.map((song) =>
-                                song.uri
-                              ),
+                              uris: message.song_cards!.map((song) => song.uri),
                               actionName: "play",
                             }))}
                       >

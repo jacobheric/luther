@@ -179,8 +179,9 @@ export const searchSong = async (
     return null;
   }
 
-  const url =
-    `https://api.spotify.com/v1/search?q=${encodeURIComponent(`${song} ${artist}`)}&type=track&limit=${SEARCH_LIMIT}&market=${market}`;
+  const url = `https://api.spotify.com/v1/search?q=${
+    encodeURIComponent(`${song} ${artist}`)
+  }&type=track&limit=${SEARCH_LIMIT}&market=${market}`;
   const response = await spotifyFetch(url, {
     headers: { "Authorization": `Bearer ${token.access_token}` },
   });
